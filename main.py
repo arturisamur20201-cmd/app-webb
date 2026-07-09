@@ -19,7 +19,19 @@ app.config['SITE_NAME'] = 'To-Play List'
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'backlog_v2.db')
+
+def resolve_database_uri():
+    if os.environ.get('DATABASE_URL'):
+        return os.environ['DATABASE_URL']
+    primary_db = os.path.join(basedir, 'backlog_v2.db')
+    legacy_db = os.path.join(basedir, 'backlog.db')
+    if os.path.exists(primary_db):
+        return 'sqlite:///' + primary_db
+    if os.path.exists(legacy_db):
+        return 'sqlite:///' + legacy_db
+    return 'sqlite:///' + primary_db
+
+app.config['SQLALCHEMY_DATABASE_URI'] = resolve_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -298,16 +310,22 @@ def add_recommended_games_for_user(user_id):
             'notes': 'Aventura de construcción y exploración con muchos logros.',
         }
     ]
+    existing_titles = {game.title.lower() for game in Game.query.filter_by(user_id=user_id).all()}
     for game_data in recommended:
+        if game_data['title'].lower() in existing_titles:
+            continue
         game = Game(user_id=user_id, **game_data)
         db.session.add(game)
         db.session.flush()
+        if not game.emoji:
+            game.emoji = choose_game_emoji(game.title, game.platform)
         if game.steam_app_id:
             details = fetch_steam_app_details(game.steam_app_id)
             game.image_url = details.get('header_image') or details.get('background') or game.image_url
             if details and not game.steam_name:
                 game.steam_name = details.get('name')
             import_steam_achievements_for_game(game)
+        existing_titles.add(game_data['title'].lower())
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -315,6 +333,8 @@ def login():
         user = User.query.filter_by(username=request.form.get('username')).first()
         if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
+            add_recommended_games_for_user(user.id)
+            db.session.commit()
             return redirect(url_for('index'))
         flash('Usuario o contraseña incorrectos.')
     return render_template('login.html')
@@ -347,6 +367,10 @@ def logout():
 @login_required
 def index():
     games = Game.query.filter_by(user_id=current_user.id).all()
+    if not games:
+        add_recommended_games_for_user(current_user.id)
+        db.session.commit()
+        games = Game.query.filter_by(user_id=current_user.id).all()
     total_games = len(games)
     return render_template('index.html', games=games, total_games=total_games)
 

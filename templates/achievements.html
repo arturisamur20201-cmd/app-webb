@@ -9,46 +9,68 @@
   </head>
   <body class="bg-light">
     <div class="container py-4">
-      <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary mb-3">← Volver</a>
-      <div class="card panel-card shadow-sm p-4">
-        <h3 class="mb-3">Logros para <strong>{{ game.title }}</strong></h3>
-        <form method="post" class="mb-4">
-          <div class="row g-2">
-            <div class="col-md-6">
-              <input name="title" class="form-control" placeholder="Título del logro" required>
-            </div>
-            <div class="col-md-3">
-              <select name="difficulty" class="form-select">
-                <option value="1">Fácil</option>
-                <option value="2">Moderado</option>
-                <option value="3" selected>Difícil</option>
-                <option value="4">Muy difícil</option>
-                <option value="5">Legendario</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <button class="btn btn-primary w-100">Añadir logro</button>
-            </div>
+      <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-light mb-3">← Volver al backlog</a>
+      <div class="card panel-card shadow-sm p-4 p-md-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+          <div>
+            <h3 class="mb-1">Logros de <strong>{{ game.title }}</strong></h3>
+            <p class="text-muted mb-0">Gestiona tus metas, marca progreso y conecta tus logros de Steam.</p>
           </div>
-          <div class="mt-2">
-            <textarea name="description" rows="2" class="form-control" placeholder="Descripción (opcional)"></textarea>
-          </div>
-        </form>
+          <span class="badge bg-info text-dark mt-3 mt-md-0">{{ achievements|length }} logros</span>
+        </div>
 
-        <h5>Logros guardados</h5>
+        <div class="card mb-4 border-0" style="background: rgba(255,255,255,0.04);">
+          <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h5 class="mb-1">Añadir un logro</h5>
+                <p class="small text-muted mb-0">Crea un logro manualmente o reintenta la importación automática desde Steam.</p>
+              </div>
+              <form method="post" class="m-0">
+                <input type="hidden" name="retry_import" value="1">
+                <button class="btn btn-outline-info">Reintentar importación</button>
+              </form>
+            </div>
+            <form method="post" class="mb-0">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <input name="title" class="form-control" placeholder="Título del logro" required>
+                </div>
+                <div class="col-md-3">
+                  <select name="difficulty" class="form-select">
+                    <option value="1">Fácil</option>
+                    <option value="2">Moderado</option>
+                    <option value="3" selected>Difícil</option>
+                    <option value="4">Muy difícil</option>
+                    <option value="5">Legendario</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <button class="btn btn-primary w-100">Añadir logro</button>
+                </div>
+              </div>
+              <div class="mt-2">
+                <textarea name="description" rows="2" class="form-control" placeholder="Descripción (opcional)"></textarea>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <h5 class="mb-3">Logros guardados</h5>
         <div class="list-group">
           {% for a in achievements %}
-            <div class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="list-group-item d-flex justify-content-between align-items-start" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);">
               <div>
-                <div class="fw-bold">{{ a.title }}</div>
-                <div class="small text-muted">{{ a.description }}</div>
+                <div class="fw-bold">{{ a.title or 'Logro ' ~ loop.index }}</div>
+                <div class="small text-muted">{{ a.description or 'Sin descripción' }}</div>
               </div>
               <div class="text-end small">
-                <div>Dif: {{ a.difficulty }}</div>
+                <div class="mb-1">Dif: {{ a.difficulty }}</div>
+                <div class="badge {{ 'bg-success' if a.unlocked else 'bg-secondary' }}">{{ 'Desbloqueado' if a.unlocked else 'Pendiente' }}</div>
               </div>
             </div>
           {% else %}
-            <div class="text-muted py-3">No hay logros aún.</div>
+            <div class="text-muted py-3">No hay logros aún. Puedes crear uno manualmente o reintentar la importación desde Steam si el juego fue encontrado.</div>
           {% endfor %}
         </div>
       </div>

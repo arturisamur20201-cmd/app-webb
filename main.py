@@ -1,6 +1,9 @@
+import json
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash
+from urllib import error as urllib_error, parse as urllib_parse, request as urllib_request
+
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -43,6 +46,22 @@ class Game(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     progress = db.Column(db.Integer, default=0)
     emoji = db.Column(db.String(4), nullable=True)
+    steam_app_id = db.Column(db.String(50), nullable=True)
+    steam_name = db.Column(db.String(200), nullable=True)
+    image_url = db.Column(db.String(500), nullable=True)
+
+class Achievement(db.Model):
+    __tablename__ = 'achievements'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    difficulty = db.Column(db.Integer, default=3)
+    unlocked = db.Column(db.Boolean, default=False)
+    source = db.Column(db.String(50), default='manual')
+    steam_api_name = db.Column(db.String(150), nullable=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    game = db.relationship('Game', backref=db.backref('achievements', cascade='all, delete-orphan'))
 
 
 @login_manager.user_loader
@@ -57,11 +76,153 @@ def inject_site_name():
 
 def ensure_schema():
     with db.engine.connect() as conn:
-        columns = [row[1] for row in conn.execute(text("PRAGMA table_info(games)")).fetchall()]
-        if 'progress' not in columns:
+        games_columns = [row[1] for row in conn.execute(text("PRAGMA table_info(games)")).fetchall()]
+        if 'progress' not in games_columns:
             conn.execute(text("ALTER TABLE games ADD COLUMN progress INTEGER DEFAULT 0"))
-        if 'emoji' not in columns:
+        if 'emoji' not in games_columns:
             conn.execute(text("ALTER TABLE games ADD COLUMN emoji TEXT"))
+        if 'steam_app_id' not in games_columns:
+            conn.execute(text("ALTER TABLE games ADD COLUMN steam_app_id TEXT"))
+        if 'steam_name' not in games_columns:
+            conn.execute(text("ALTER TABLE games ADD COLUMN steam_name TEXT"))
+        if 'image_url' not in games_columns:
+            conn.execute(text("ALTER TABLE games ADD COLUMN image_url TEXT"))
+
+
+def build_steam_suggestion_payload(payload):
+    items = payload.get('items', []) if isinstance(payload, dict) else []
+    suggestions = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        appid = item.get('id')
+        name = (item.get('name') or '').strip()
+        if not appid or not name:
+            continue
+        suggestions.append({
+            'appid': int(appid),
+            'name': name,
+            'price': item.get('price') or '',
+            'image': item.get('tiny_image') or '',
+        })
+    return suggestions[:6]
+
+
+def build_achievement_payloads(schema_payload, player_payload):
+    achievements = []
+    schema_items = []
+    if isinstance(schema_payload, dict):
+        schema_items = schema_payload.get('game', {}).get('availableGameStats', {}).get('achievements', [])
+    player_items = []
+    if isinstance(player_payload, dict):
+        player_items = player_payload.get('playerstats', {}).get('achievements', [])
+
+    player_lookup = {entry.get('apiname'): entry for entry in player_items if isinstance(entry, dict) and entry.get('apiname')}
+
+    for item in schema_items:
+        if not isinstance(item, dict):
+            continue
+        api_name = (item.get('name') or '').strip()
+        display_name = item.get('displayName') or api_name
+        description = item.get('description') or ''
+        player_entry = player_lookup.get(api_name, {})
+        achievements.append({
+            'name': api_name,
+            'display_name': display_name,
+            'description': description,
+            'unlocked': bool(player_entry.get('achieved')),
+        })
+    return achievements
+
+
+def search_steam_games(query, limit=6):
+    term = (query or '').strip()
+    if len(term) < 2:
+        return []
+    encoded_term = urllib_parse.quote(term)
+    url = f'https://store.steampowered.com/api/storesearch/?term={encoded_term}&l=spanish&cc=es&limit={limit}'
+    req = urllib_request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib_request.urlopen(req, timeout=8) as response:
+            payload = json.load(response)
+    except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError, ValueError):
+        return []
+    return build_steam_suggestion_payload(payload)
+
+
+def fetch_steam_app_details(appid):
+    if not appid:
+        return {}
+    url = f'https://store.steampowered.com/api/appdetails?appids={appid}&l=spanish&cc=es&filters=basic,achievements'
+    req = urllib_request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib_request.urlopen(req, timeout=8) as response:
+            payload = json.load(response)
+    except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError, ValueError):
+        return {}
+    data = payload.get(str(appid), {})
+    if not data.get('success'):
+        return {}
+    return data.get('data', {})
+
+
+def import_steam_achievements_for_game(game):
+    if not game.steam_app_id:
+        return []
+
+    data = fetch_steam_app_details(game.steam_app_id)
+    achievements_data = data.get('achievements') or {}
+    achievements_list = []
+    total = 0
+    if isinstance(achievements_data, dict):
+        achievements_list = achievements_data.get('achievements') or achievements_data.get('highlighted') or []
+        total = achievements_data.get('total') or 0
+
+    existing_names = {
+        entry.steam_api_name for entry in Achievement.query.filter_by(game_id=game.id, user_id=game.user_id).all() if entry.steam_api_name
+    }
+
+    created = []
+    if isinstance(achievements_list, list) and achievements_list:
+        for item in achievements_list:
+            if not isinstance(item, dict):
+                continue
+            name = (item.get('displayName') or item.get('localized_name') or item.get('name') or '').strip()
+            api_name = (item.get('name') or item.get('displayName') or item.get('localized_name') or '').strip()
+            description = item.get('description') or item.get('localized_name') or item.get('displayName') or 'Logro importado automáticamente desde Steam.'
+            if not name or api_name in existing_names:
+                continue
+            achievement = Achievement(
+                title=name,
+                description=description,
+                difficulty=3,
+                unlocked=False,
+                source='steam',
+                steam_api_name=api_name,
+                game_id=game.id,
+                user_id=game.user_id,
+            )
+            db.session.add(achievement)
+            created.append(achievement)
+    elif total and total > 0:
+        for index in range(1, total + 1):
+            placeholder_name = f'Logro {index}'
+            if placeholder_name in existing_names:
+                continue
+            achievement = Achievement(
+                title=placeholder_name,
+                description='Logro detectado gracias a los datos de Steam.',
+                difficulty=3,
+                unlocked=False,
+                source='steam',
+                steam_api_name=f'placeholder_{index}',
+                game_id=game.id,
+                user_id=game.user_id,
+            )
+            db.session.add(achievement)
+            created.append(achievement)
+
+    return created
 
 
 def choose_game_emoji(title, platform):
@@ -87,48 +248,66 @@ def choose_game_emoji(title, platform):
 def add_recommended_games_for_user(user_id):
     recommended = [
         {
-            'title': 'The Legend of Zelda: Breath of the Wild',
-            'platform': 'Nintendo Switch',
-            'status': 'sin jugar',
-            'progress': 0,
-            'rating': None,
-            'notes': 'Aventura abierta imprescindible',
-        },
-        {
-            'title': 'Hollow Knight',
+            'title': 'Hades',
             'platform': 'PC',
+            'steam_app_id': '310950',
+            'steam_name': 'Hades',
             'status': 'sin jugar',
             'progress': 0,
             'rating': None,
-            'notes': 'Exploración y combate profundo',
-        },
-        {
-            'title': 'Spider-Man: Miles Morales',
-            'platform': 'PS5',
-            'status': 'sin jugar',
-            'progress': 0,
-            'rating': None,
-            'notes': 'Acción urbana y vuelo libre',
+            'notes': 'Órale con este roguelite de acción y narrativa.',
         },
         {
             'title': 'Stardew Valley',
             'platform': 'PC',
+            'steam_app_id': '413150',
+            'steam_name': 'Stardew Valley',
             'status': 'sin jugar',
             'progress': 0,
             'rating': None,
-            'notes': 'Simulación relajada y granja',
+            'notes': 'Un simulador de granja relajante con muchas metas.',
         },
         {
-            'title': 'Final Fantasy VII Remake',
-            'platform': 'PS4 Pro',
+            'title': 'Hollow Knight',
+            'platform': 'PC',
+            'steam_app_id': '367520',
+            'steam_name': 'Hollow Knight',
             'status': 'sin jugar',
             'progress': 0,
             'rating': None,
-            'notes': 'RPG cinematográfico moderno',
+            'notes': 'Explora una metrópolis subterránea y desbloquea logros.',
+        },
+        {
+            'title': 'Celeste',
+            'platform': 'PC',
+            'steam_app_id': '103100',
+            'steam_name': 'Celeste',
+            'status': 'sin jugar',
+            'progress': 0,
+            'rating': None,
+            'notes': 'Plataformas precisas y una historia emotiva.',
+        },
+        {
+            'title': 'Terraria',
+            'platform': 'PC',
+            'steam_app_id': '105600',
+            'steam_name': 'Terraria',
+            'status': 'sin jugar',
+            'progress': 0,
+            'rating': None,
+            'notes': 'Aventura de construcción y exploración con muchos logros.',
         }
     ]
     for game_data in recommended:
-        db.session.add(Game(user_id=user_id, **game_data))
+        game = Game(user_id=user_id, **game_data)
+        db.session.add(game)
+        db.session.flush()
+        if game.steam_app_id:
+            details = fetch_steam_app_details(game.steam_app_id)
+            game.image_url = details.get('header_image') or details.get('background') or game.image_url
+            if details and not game.steam_name:
+                game.steam_name = details.get('name')
+            import_steam_achievements_for_game(game)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -179,6 +358,9 @@ def add_game():
         notes_value = request.form.get('notes')
         platform_value = request.form.get('platform')
         title_value = request.form.get('title')
+        steam_app_id_value = request.form.get('steam_app_id') or None
+        steam_name_value = request.form.get('steam_name') or None
+
         new_game = Game(
             title=title_value,
             platform=platform_value,
@@ -187,11 +369,27 @@ def add_game():
             notes=notes_value.strip() if notes_value and notes_value.strip() else None,
             progress=int(request.form.get('progress') or 0),
             emoji=choose_game_emoji(title_value, platform_value),
+            steam_app_id=steam_app_id_value,
+            steam_name=steam_name_value,
             user_id=current_user.id
         )
         db.session.add(new_game)
+        db.session.flush()
+
+        if not new_game.steam_app_id:
+            suggestions = search_steam_games(title_value)
+            if suggestions:
+                new_game.steam_app_id = str(suggestions[0]['appid'])
+                new_game.steam_name = suggestions[0]['name']
+
+        game_details = fetch_steam_app_details(new_game.steam_app_id)
+        new_game.image_url = game_details.get('header_image') or game_details.get('background') or None
+        if game_details and not new_game.steam_name:
+            new_game.steam_name = game_details.get('name')
+        import_steam_achievements_for_game(new_game)
         db.session.commit()
-        return redirect(url_for('index'))
+        flash('Juego añadido correctamente. Ahora puedes revisar sus logros.', 'success')
+        return redirect(url_for('achievements', game_id=new_game.id))
     return render_template('add_games.html', action='Añadir')
 
 @app.route('/edit/<int:game_id>', methods=['GET', 'POST'])
@@ -218,6 +416,53 @@ def edit_game(game_id):
         return redirect(url_for('index'))
         
     return render_template('edit_games.html', action='Editar', game=game, platforms=platforms, statuses=statuses)
+
+@app.route('/games/<int:game_id>/achievements', methods=['GET', 'POST'])
+@login_required
+def achievements(game_id):
+    game = Game.query.get_or_404(game_id)
+    if game.user_id != current_user.id:
+        return 'Acceso denegado', 403
+
+    if request.method == 'POST':
+        if request.form.get('retry_import'):
+            imported = import_steam_achievements_for_game(game)
+            if imported:
+                db.session.commit()
+                flash('Importación de logros reintentada correctamente.', 'success')
+            else:
+                flash('No se encontraron logros automáticos en Steam para este juego.', 'warning')
+            return redirect(url_for('achievements', game_id=game.id))
+
+        title = request.form.get('title', '').strip()
+        if title:
+            new_achievement = Achievement(
+                title=title,
+                description=request.form.get('description', '').strip() or None,
+                difficulty=int(request.form.get('difficulty') or 3),
+                source='manual',
+                game_id=game.id,
+                user_id=current_user.id,
+            )
+            db.session.add(new_achievement)
+            db.session.commit()
+            flash('Logro añadido.', 'success')
+        return redirect(url_for('achievements', game_id=game.id))
+
+    if not game.achievements and game.steam_app_id:
+        imported = import_steam_achievements_for_game(game)
+        if imported:
+            db.session.commit()
+
+    return render_template('achievements.html', game=game, achievements=game.achievements)
+
+
+@app.route('/api/steam/suggestions')
+@login_required
+def steam_suggestions():
+    query = request.args.get('query', '').strip()
+    return jsonify(search_steam_games(query))
+
 
 @app.route('/delete/<int:game_id>', methods=['POST'])
 @login_required
@@ -272,10 +517,8 @@ def profile():
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    # Página de configuración (placeholder)
     if request.method == 'POST':
-        # Aquí podrías procesar cambios de perfil o preferencias
-        flash('Cambios guardados.', 'success')
+        flash('Ajustes guardados.', 'success')
         return redirect(url_for('settings'))
     return render_template('settings.html')
 

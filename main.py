@@ -109,36 +109,307 @@ def ensure_schema():
 
 DEFAULT_RECOMMENDED_GAMES = [
     {
-        'title': 'Hades',
+        'title': 'Hades II',
         'platform': 'PC',
-        'steam_app_id': '310950',
-        'note': 'Un roguelite de acción con gran narrativa y ritmo.',
+        'steam_app_id': '1145350',
+        'note': 'La secuela del rey de los roguelites, ahora controlando a Melinoë con nueva magia.',
     },
     {
-        'title': 'Stardew Valley',
+        'title': 'Dead Cells',
+        'platform': 'PC / PS4',
+        'steam_app_id': '588650',
+        'note': 'Un metroidvania roguelite frenético con un combate absurdamente pulido.',
+    },
+    {
+        'title': 'The Binding of Isaac: Rebirth',
+        'platform': 'PC / PS4',
+        'steam_app_id': '250900',
+        'note': 'El clásico indiscutible de la generación procedimental y las sinergias locas.',
+    },
+    {
+        'title': 'Enter the Gungeon',
+        'platform': 'PC / PS4',
+        'steam_app_id': '311690',
+        'note': 'Un bullet hell roguelike adictivo lleno de armas absurdas y referencias pop.',
+    },
+    {
+        'title': 'Slay the Spire',
+        'platform': 'PC / PS4',
+        'steam_app_id': '646570',
+        'note': 'El roguelike de construcción de mazos definitivo. Adictivo a más no poder.',
+    },
+    {
+        'title': 'Risk of Rain 2',
+        'platform': 'PC / PS4',
+        'steam_app_id': '632360',
+        'note': 'Un roguelike en 3D caótico donde la dificultad sube con el reloj.',
+    },
+    {
+        'title': 'Vampire Survivors',
         'platform': 'PC',
-        'steam_app_id': '413150',
-        'note': 'Un simulador de granja relajante con muchísimas metas.',
+        'steam_app_id': '1794680',
+        'note': 'El juego de "bullet heaven" que puso de moda sobrevivir a hordas con ataques automáticos.',
+    },
+    {
+        'title': 'Marvel\'s Spider-Man 2',
+        'platform': 'PS5 / PC',
+        'steam_app_id': '2940250',
+        'note': 'La espectacular continuación de la historia de Peter y Miles con el traje de simbiote.',
+    },
+    {
+        'title': 'God of War Ragnarök',
+        'platform': 'PS4 / PC',
+        'steam_app_id': '2322010',
+        'note': 'El épico cierre de la saga nórdica de Kratos y Atreus con un combate brutal.',
+    },
+    {
+        'title': 'Elden Ring',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1245620',
+        'note': 'La obra maestra de FromSoftware que redefine lo que debe ser un mundo abierto.',
+    },
+    {
+        'title': 'Cyberpunk 2077',
+        'platform': 'PC',
+        'steam_app_id': '1091500',
+        'note': 'Un RPG de acción brutal en Night City que brilla con Lossless Scaling o FSR.',
+    },
+    {
+        'title': 'Red Dead Redemption 2',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1174180',
+        'note': 'Uno de los mundos abiertos más inmersivos y detallados jamás creados.',
+    },
+    {
+        'title': 'Grand Theft Auto V',
+        'platform': 'PC / PS4',
+        'steam_app_id': '271590',
+        'note': 'El titán de Rockstar que nunca muere. Campaña increíble y un online eterno.',
+    },
+    {
+        'title': 'Ghost of Tsushima DIRECTOR\'S CUT',
+        'platform': 'PS4 / PC',
+        'steam_app_id': '2215430',
+        'note': 'Combates de samuráis perfectos y un apartado artístico que te deja loco.',
+    },
+    {
+        'title': 'Horizon Forbidden West',
+        'platform': 'PS4 / PC',
+        'steam_app_id': '2420110',
+        'note': 'Aloy explora el Oeste Prohibido enfrentando nuevas y colosales máquinas mecánicas.',
+    },
+    {
+        'title': 'The Witcher 3: Wild Hunt',
+        'platform': 'PC / PS4',
+        'steam_app_id': '292030',
+        'note': 'Una de las mejores narrativas en los videojuegos de rol de la historia.',
+    },
+    {
+        'title': 'Hitman World of Assassination',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1659040',
+        'note': 'El simulador de asesinatos definitivo con mapas gigantescos que son puzles interactivos.',
+    },
+    {
+        'title': 'Metal Gear Solid V: The Phantom Pain',
+        'platform': 'PC / PS4',
+        'steam_app_id': '287700',
+        'note': 'Jugabilidad de sigilo perfecta en mundo abierto cortesía de Hideo Kojima.',
+    },
+    {
+        'title': 'Dishonored 2',
+        'platform': 'PC / PS4',
+        'steam_app_id': '403640',
+        'note': 'Infiltración en primera persona con un diseño de niveles brillante y super creativo.',
+    },
+    {
+        'title': 'EA Sports FC 24',
+        'platform': 'PC / PS4',
+        'steam_app_id': '2195250',
+        'note': 'La evolución de FIFA con Ultimate Team y el modo carrera para armar tu plantilla ideal.',
+    },
+    {
+        'title': 'Forza Horizon 5',
+        'platform': 'PC',
+        'steam_app_id': '1551360',
+        'note': 'El rey de los arcades de conducción en un mapa brutal inspirado en México.',
+    },
+    {
+        'title': 'Assetto Corsa Competizione',
+        'platform': 'PC / PS4',
+        'steam_app_id': '805550',
+        'note': 'Simulador de carreras serio enfocado en la categoría GT con físicas brutales.',
+    },
+    {
+        'title': 'Rocket League',
+        'platform': 'PC / PS4',
+        'steam_app_id': '252950',
+        'note': 'Fútbol con carros propulsados por cohetes. Rápido, competitivo y gratis.',
     },
     {
         'title': 'Hollow Knight',
-        'platform': 'PC',
+        'platform': 'PC / PS4',
         'steam_app_id': '367520',
-        'note': 'Explora un mundo plataformas profundo y desafiante.',
+        'note': 'El pico más alto de los metroidvania independientes. Arte, música y reto top.',
     },
     {
         'title': 'Celeste',
-        'platform': 'PC',
-        'steam_app_id': '103100',
-        'note': 'Plataformas precisas y una historia emocional.',
+        'platform': 'PC / PS4',
+        'steam_app_id': '504230',
+        'note': 'Un plataformas de precisión ultra pulido con una hermosa historia sobre superación.',
+    },
+    {
+        'title': 'Outer Wilds',
+        'platform': 'PC / PS4',
+        'steam_app_id': '753640',
+        'note': 'Una aventura de misterio espacial basada en la curiosidad y bucles temporales.',
+    },
+    {
+        'title': 'Stardew Valley',
+        'platform': 'PC / PS4',
+        'steam_app_id': '413150',
+        'note': 'El simulador de granja e interacción social definitivo. Paz mental hecha juego.',
     },
     {
         'title': 'Terraria',
-        'platform': 'PC',
+        'platform': 'PC / PS4',
         'steam_app_id': '105600',
-        'note': 'Aventura de construcción y exploración con cientos de horas.',
+        'note': 'Aventura sandbox en 2D con un sistema de progresión y jefes brutal.',
+    },
+    {
+        'title': 'Shovel Knight: Treasure Trove',
+        'platform': 'PC / PS4',
+        'steam_app_id': '250760',
+        'note': 'Una carta de amor a los juegos clásicos de 8 bits con mecánicas modernas.',
+    },
+    {
+        'title': 'Cuphead',
+        'platform': 'PC / PS4',
+        'steam_app_id': '268910',
+        'note': 'Un juego de jefes frenético con un estilo de animación de los años 30 dibujado a mano.',
+    },
+    {
+        'title': 'Katana ZERO',
+        'platform': 'PC',
+        'steam_app_id': '460950',
+        'note': 'Acción neo-noir en 2D donde mueres de un golpe y manipulas el tiempo.',
+    },
+    {
+        'title': 'Hotline Miami',
+        'platform': 'PC / PS4',
+        'steam_app_id': '219150',
+        'note': 'Acción cenital salvaje con una banda sonora synthwave espectacular.',
+    },
+    {
+        'title': 'Ori and the Will of the Wisps',
+        'platform': 'PC',
+        'steam_app_id': '1057090',
+        'note': 'Un metroidvania visualmente precioso con una fluidez de movimiento increíble.',
+    },
+    {
+        'title': 'Disco Elysium - The Final Cut',
+        'platform': 'PC / PS4',
+        'steam_app_id': '632470',
+        'note': 'Un RPG detectivesco donde tus habilidades definen la salud mental de tu personaje.',
+    },
+    {
+        'title': 'Subnautica',
+        'platform': 'PC / PS4',
+        'steam_app_id': '264710',
+        'note': 'Supervivencia y exploración en un océano alienígena hermoso... y terrorífico.',
+    },
+    {
+        'title': 'It Takes Two',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1426210',
+        'note': 'El mejor juego cooperativo exclusivo para dos personas. Pura creatividad.',
+    },
+    {
+        'title': 'Helldivers 2',
+        'platform': 'PC / PS5',
+        'steam_app_id': '553850',
+        'note': 'Acción cooperativa caótica repartiendo democracia intergaláctica con amigos.',
+    },
+    {
+        'title': 'Lethal Company',
+        'platform': 'PC',
+        'steam_app_id': '1966720',
+        'note': 'Terror cooperativo lo-fi que genera situaciones absurdamente cómicas con chat de voz de proximidad.',
+    },
+    {
+        'title': 'Monster Hunter: World',
+        'platform': 'PC / PS4',
+        'steam_app_id': '582010',
+        'note': 'Cazar monstruos gigantescos con armas colosales, solo o con panas.',
+    },
+    {
+        'title': 'Overcooked! All You Can Eat',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1243830',
+        'note': 'El simulador de cocina que pone a prueba tus amistades y tu manejo del caos.',
+    },
+    {
+        'title': 'Resident Evil 4 (Remake)',
+        'platform': 'PC / PS4',
+        'steam_app_id': '2050650',
+        'note': 'Una reimaginarización perfecta del clásico de acción y survival horror.',
+    },
+    {
+        'title': 'Resident Evil 7: Biohazard',
+        'platform': 'PC / PS4',
+        'steam_app_id': '418370',
+        'note': 'El regreso al terror puro en primera persona dentro de una casa pantanosa y tétrica.',
+    },
+    {
+        'title': 'Outlast',
+        'platform': 'PC / PS4',
+        'steam_app_id': '238320',
+        'note': 'Terror psicológico puro en un manicomio donde tu única defensa es correr y grabar.',
+    },
+    {
+        'title': 'Dead Space (Remake)',
+        'platform': 'PC',
+        'steam_app_id': '1693980',
+        'note': 'Terror de ciencia ficción claustrofóbico con un desmembramiento táctico impecable.',
+    },
+    {
+        'title': 'Alan Wake 2',
+        'platform': 'PC',
+        'steam_app_id': '0',
+        'note': 'Survival horror psicológico con una narrativa densa y gráficos fotorrealistas.',
+    },
+    {
+        'title': 'Sekiro: Shadows Die Twice',
+        'platform': 'PC / PS4',
+        'steam_app_id': '814380',
+        'note': 'El mejor sistema de parries y combate de katanas del mundo de los videojuegos.',
+    },
+    {
+        'title': 'Dark Souls III',
+        'platform': 'PC / PS4',
+        'steam_app_id': '374320',
+        'note': 'El cierre perfecto de la trilogía original de FromSoftware. Jefes memorables.',
+    },
+    {
+        'title': 'Lies of P',
+        'platform': 'PC / PS4',
+        'steam_app_id': '1627720',
+        'note': 'Un espectacular soulslike inspirado en Pinocho con una ambientación victoriana genial.',
+    },
+    {
+        'title': 'Devil May Cry 5',
+        'platform': 'PC / PS4',
+        'steam_app_id': '601150',
+        'note': 'Acción hack and slash pura con combos infinitos llenos de estilo.',
+    },
+    {
+        'title': 'Monster Hunter Wilds',
+        'platform': 'PC',
+        'steam_app_id': '2246340',
+        'note': 'La nueva frontera de la caza de monstruos con ecosistemas vivos masivos.',
     },
 ]
+
 
 def resolve_steam_image(appid, title=None):
     if not appid:
@@ -195,8 +466,56 @@ def build_steam_suggestion_payload(payload):
             'name': name,
             'price': item.get('price') or '',
             'image': item.get('tiny_image') or '',
+            'platform': 'PC',
+            'source': 'steam',
         })
     return suggestions[:6]
+
+
+def get_rawg_api_key():
+    return os.environ.get('RAWG_API_KEY') or os.environ.get('RAWG_KEY')
+
+
+def build_rawg_suggestion_payload(payload):
+    results = payload.get('results', []) if isinstance(payload, dict) else []
+    suggestions = []
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        appid = item.get('id')
+        name = (item.get('name') or '').strip()
+        if not appid or not name:
+            continue
+        platforms = []
+        for p in item.get('platforms', []) or []:
+            if not isinstance(p, dict):
+                continue
+            platform_name = (p.get('platform', {}) or {}).get('name')
+            if platform_name:
+                platforms.append(platform_name)
+        suggestions.append({
+            'appid': int(appid),
+            'name': name,
+            'price': '',
+            'image': item.get('background_image') or '',
+            'platform': ' / '.join(platforms[:3]),
+            'source': 'rawg',
+        })
+    return suggestions[:6]
+
+
+def merge_game_suggestions(steam_results, rawg_results, limit=6):
+    merged = []
+    seen = set()
+    for item in (steam_results or []) + (rawg_results or []):
+        name = (item.get('name') or '').strip().lower()
+        if not name or name in seen:
+            continue
+        merged.append(item)
+        seen.add(name)
+        if len(merged) >= limit:
+            break
+    return merged
 
 
 def build_achievement_payloads(schema_payload, player_payload):
@@ -224,6 +543,22 @@ def build_achievement_payloads(schema_payload, player_payload):
             'unlocked': bool(player_entry.get('achieved')),
         })
     return achievements
+
+
+def search_rawg_games(query, limit=6):
+    api_key = get_rawg_api_key()
+    term = (query or '').strip()
+    if not api_key or len(term) < 2:
+        return []
+    encoded_term = urllib_parse.quote(term)
+    url = f'https://api.rawg.io/api/games?search={encoded_term}&page_size={limit}&key={urllib_parse.quote(api_key)}'
+    req = urllib_request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib_request.urlopen(req, timeout=8) as response:
+            payload = json.load(response)
+    except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError, ValueError):
+        return []
+    return build_rawg_suggestion_payload(payload)
 
 
 def search_steam_games(query, limit=6):
@@ -461,6 +796,8 @@ def add_game():
         title_value = request.form.get('title')
         steam_app_id_value = request.form.get('steam_app_id') or None
         steam_name_value = request.form.get('steam_name') or None
+        suggestion_source_value = request.form.get('suggestion_source') or None
+        image_url_value = request.form.get('image_url') or None
 
         new_game = Game(
             title=title_value,
@@ -472,26 +809,37 @@ def add_game():
             emoji=choose_game_emoji(title_value, platform_value),
             steam_app_id=steam_app_id_value,
             steam_name=steam_name_value,
+            image_url=image_url_value,
             user_id=current_user.id
         )
         db.session.add(new_game)
         db.session.flush()
 
-        if not new_game.steam_app_id:
+        if not new_game.steam_app_id and suggestion_source_value != 'rawg':
             suggestions = search_steam_games(title_value)
             if suggestions:
                 new_game.steam_app_id = str(suggestions[0]['appid'])
                 new_game.steam_name = suggestions[0]['name']
 
-        game_details = fetch_steam_app_details(new_game.steam_app_id)
-        new_game.image_url = game_details.get('header_image') or game_details.get('background') or None
-        if game_details and not new_game.steam_name:
-            new_game.steam_name = game_details.get('name')
-        import_steam_achievements_for_game(new_game)
+        if new_game.steam_app_id:
+            game_details = fetch_steam_app_details(new_game.steam_app_id)
+            new_game.image_url = game_details.get('header_image') or game_details.get('background') or new_game.image_url
+            if game_details and not new_game.steam_name:
+                new_game.steam_name = game_details.get('name')
+            import_steam_achievements_for_game(new_game)
         db.session.commit()
         flash('Juego añadido correctamente. Ahora puedes revisar sus logros.', 'success')
         return redirect(url_for('achievements', game_id=new_game.id))
     return render_template('add_games.html', action='Añadir')
+
+@app.route('/api/steam/suggestions')
+@app.route('/api/game/suggestions')
+@login_required
+def game_suggestions():
+    query = request.args.get('query', '').strip()
+    steam_results = search_steam_games(query)
+    rawg_results = search_rawg_games(query)
+    return jsonify(merge_game_suggestions(steam_results, rawg_results))
 
 @app.route('/edit/<int:game_id>', methods=['GET', 'POST'])
 @login_required

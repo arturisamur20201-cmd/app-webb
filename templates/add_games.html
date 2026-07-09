@@ -21,9 +21,11 @@
                     <div class="mb-3">
                         <label>Título:</label>
                         <input type="text" name="title" id="gameTitle" class="form-control" required autocomplete="off">
-                        <div class="form-text text-muted">Escribe el título y selecciona una sugerencia de Steam si está disponible.</div>
+                        <div class="form-text text-muted">Escribe el título y selecciona una sugerencia de Steam o Nintendo/Switch si está disponible.</div>
                         <input type="hidden" name="steam_app_id" id="steamAppId">
                         <input type="hidden" name="steam_name" id="steamName">
+                        <input type="hidden" name="suggestion_source" id="suggestionSource">
+                        <input type="hidden" name="image_url" id="imageUrl">
                         <div id="steamSuggestions" class="list-group mt-2"></div>
                     </div>
                     <div class="mb-3">
@@ -69,6 +71,8 @@
             const suggestionsBox = document.getElementById('steamSuggestions');
             const appIdInput = document.getElementById('steamAppId');
             const nameInput = document.getElementById('steamName');
+            const sourceInput = document.getElementById('suggestionSource');
+            const imageUrlInput = document.getElementById('imageUrl');
 
             if (!input || !suggestionsBox) return;
 
@@ -80,27 +84,33 @@
                     suggestionsBox.innerHTML = '';
                     appIdInput.value = '';
                     nameInput.value = '';
+                    sourceInput.value = '';
+                    imageUrlInput.value = '';
                     return;
                 }
 
                 timer = setTimeout(() => {
-                    fetch(`/api/steam/suggestions?query=${encodeURIComponent(query)}`)
+                    fetch(`/api/game/suggestions?query=${encodeURIComponent(query)}`)
                         .then(response => response.json())
                         .then(items => {
                             suggestionsBox.innerHTML = '';
                             if (!items.length) {
-                                suggestionsBox.innerHTML = '<div class="list-group-item text-muted">Sin resultados de Steam.</div>';
+                                suggestionsBox.innerHTML = '<div class="list-group-item text-muted">Sin resultados.</div>';
                                 return;
                             }
                             items.forEach(item => {
                                 const button = document.createElement('button');
                                 button.type = 'button';
                                 button.className = 'list-group-item list-group-item-action';
-                                button.textContent = `${item.name}${item.price ? ' — ' + item.price : ''}`;
+                                const sourceLabel = item.source === 'rawg' ? ' (Nintendo/Switch)' : '';
+                                const platformLabel = item.platform ? ` [${item.platform}]` : '';
+                                button.textContent = `${item.name}${platformLabel}${sourceLabel}${item.price ? ' — ' + item.price : ''}`;
                                 button.addEventListener('click', () => {
                                     input.value = item.name;
-                                    appIdInput.value = item.appid;
+                                    appIdInput.value = item.source === 'steam' ? item.appid : '';
                                     nameInput.value = item.name;
+                                    sourceInput.value = item.source;
+                                    imageUrlInput.value = item.image || '';
                                     suggestionsBox.innerHTML = '';
                                 });
                                 suggestionsBox.appendChild(button);

@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="row g-5">
-                        <div class="col-md-6 mb-4">
+                                    <div class="col-md-6 mb-4">
                             <div class="card panel-card shadow-sm h-100">
                                 <div class="card-body">
                                     <h4 class="card-title text-center">Estado del Catálogo</h4>
@@ -64,7 +64,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-4">
+                                    <div class="col-md-6 mb-4">
                             <div class="card panel-card shadow-sm h-100">
                                 <div class="card-body">
                                     <h4 class="card-title text-center">Juegos por Plataforma</h4>
@@ -72,6 +72,34 @@
                                 </div>
                             </div>
                         </div>
+                                    <div class="col-12 mt-4">
+                                        <div class="row g-4">
+                                            <div class="col-md-4">
+                                                <div class="card panel-card text-center p-3">
+                                                    <h6 class="mb-1">Horas Totales Registradas</h6>
+                                                    <div class="h3 mb-0">{{ total_hours }} h</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card panel-card text-center p-3">
+                                                    <h6 class="mb-1">Top Juegos por Horas</h6>
+                                                    <canvas id="hoursChart"></canvas>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card panel-card text-center p-3">
+                                                    <h6 class="mb-1">Abandonados vs Completados</h6>
+                                                    <canvas id="abandonChart"></canvas>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card panel-card text-center p-3">
+                                                    <h6 class="mb-1">Top Géneros</h6>
+                                                    <canvas id="genresChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                 </div>
             </div>
         </div>
@@ -108,6 +136,49 @@
                     y: { beginAtZero: true, ticks: { stepSize: 1 } }
                 }
             }
+        });
+
+        // Abandonados vs Completados (Doughnut)
+        const ctxAbandon = document.getElementById('abandonChart').getContext('2d');
+        new Chart(ctxAbandon, {
+            type: 'doughnut',
+            data: {
+                labels: ['Abandonados', 'Completados'],
+                datasets: [{
+                    data: [{{ abandoned_count or 0 }}, {{ completed_count or 0 }}],
+                    backgroundColor: ['#ff6b6b','#28a745']
+                }]
+            }
+        });
+
+        // Top Géneros (Barras horizontales)
+        const ctxGenres = document.getElementById('genresChart').getContext('2d');
+        new Chart(ctxGenres, {
+            type: 'bar',
+            data: {
+                labels: {{ genre_labels | tojson }},
+                datasets: [{
+                    label: 'Cantidad',
+                    data: {{ genre_data | tojson }},
+                    backgroundColor: '#0ea5e9'
+                }]
+            },
+            options: { indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+        });
+
+        // Top Horas (Barras)
+        const ctxHours = document.getElementById('hoursChart').getContext('2d');
+        new Chart(ctxHours, {
+            type: 'bar',
+            data: {
+                labels: {{ hours_labels | tojson }},
+                datasets: [{
+                    label: 'Horas jugadas',
+                    data: {{ hours_data | tojson }},
+                    backgroundColor: '#f97316'
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
         });
     </script>
 </body>

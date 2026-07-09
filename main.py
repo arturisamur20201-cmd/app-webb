@@ -1,9 +1,11 @@
 import json
 import os
 from datetime import datetime
+import random
 from urllib import error as urllib_error, parse as urllib_parse, request as urllib_request
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -99,6 +101,83 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE games ADD COLUMN steam_name TEXT"))
         if 'image_url' not in games_columns:
             conn.execute(text("ALTER TABLE games ADD COLUMN image_url TEXT"))
+        # Optional analytics columns
+        if 'hours' not in games_columns:
+            conn.execute(text("ALTER TABLE games ADD COLUMN hours REAL DEFAULT 0"))
+        if 'genre' not in games_columns:
+            conn.execute(text("ALTER TABLE games ADD COLUMN genre TEXT"))
+
+DEFAULT_RECOMMENDED_GAMES = [
+    {
+        'title': 'Hades',
+        'platform': 'PC',
+        'steam_app_id': '310950',
+        'note': 'Un roguelite de acción con gran narrativa y ritmo.',
+    },
+    {
+        'title': 'Stardew Valley',
+        'platform': 'PC',
+        'steam_app_id': '413150',
+        'note': 'Un simulador de granja relajante con muchísimas metas.',
+    },
+    {
+        'title': 'Hollow Knight',
+        'platform': 'PC',
+        'steam_app_id': '367520',
+        'note': 'Explora un mundo plataformas profundo y desafiante.',
+    },
+    {
+        'title': 'Celeste',
+        'platform': 'PC',
+        'steam_app_id': '103100',
+        'note': 'Plataformas precisas y una historia emocional.',
+    },
+    {
+        'title': 'Terraria',
+        'platform': 'PC',
+        'steam_app_id': '105600',
+        'note': 'Aventura de construcción y exploración con cientos de horas.',
+    },
+]
+
+def resolve_steam_image(appid, title=None):
+    if not appid:
+        return ''
+    details = fetch_steam_app_details(appid)
+    image_url = details.get('header_image') or details.get('background') or ''
+    if image_url:
+        return image_url
+    if title:
+        search_results = search_steam_games(title, limit=1)
+        if search_results:
+            fallback_appid = search_results[0].get('appid')
+            if fallback_appid:
+                details = fetch_steam_app_details(fallback_appid)
+                image_url = details.get('header_image') or details.get('background') or ''
+                if image_url:
+                    return image_url
+    return f'https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg'
+
+
+def get_session_recommendation():
+    rec = session.get('recommended_game')
+    if rec:
+        return rec
+    selected = random.choice(DEFAULT_RECOMMENDED_GAMES)
+    image_url = resolve_steam_image(selected.get('steam_app_id'), selected.get('title'))
+    rec = {
+        'title': selected['title'],
+        'platform': selected['platform'],
+        'steam_app_id': selected['steam_app_id'],
+        'note': selected['note'],
+        'image_url': image_url,
+    }
+    session['recommended_game'] = rec
+    return rec
+
+
+def reset_session_recommendation():
+    session.pop('recommended_game', None)
 
 
 def build_steam_suggestion_payload(payload):
@@ -333,8 +412,8 @@ def login():
         user = User.query.filter_by(username=request.form.get('username')).first()
         if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
-            add_recommended_games_for_user(user.id)
-            db.session.commit()
+            reset_session_recommendation()
+            get_session_recommendation()
             return redirect(url_for('index'))
         flash('Usuario o contraseña incorrectos.')
     return render_template('login.html')
@@ -347,9 +426,9 @@ def registro():
         new_user = User(username=request.form.get('username'), password=hashed_pw)
         try:
             db.session.add(new_user)
-            db.session.flush()
-            add_recommended_games_for_user(new_user.id)
             db.session.commit()
+            reset_session_recommendation()
+            get_session_recommendation()
             flash('Cuenta creada con éxito. Ahora puedes iniciar sesión.', 'success')
             return redirect(url_for('login'))
         except IntegrityError:
@@ -360,6 +439,7 @@ def registro():
 @app.route('/logout')
 @login_required
 def logout():
+    reset_session_recommendation()
     logout_user()
     return redirect(url_for('login'))
 
@@ -367,12 +447,9 @@ def logout():
 @login_required
 def index():
     games = Game.query.filter_by(user_id=current_user.id).all()
-    if not games:
-        add_recommended_games_for_user(current_user.id)
-        db.session.commit()
-        games = Game.query.filter_by(user_id=current_user.id).all()
+    recommended_game = get_session_recommendation()
     total_games = len(games)
-    return render_template('index.html', games=games, total_games=total_games)
+    return render_template('index.html', games=games, total_games=total_games, recommended_game=recommended_game)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -435,6 +512,12 @@ def edit_game(game_id):
         notes_value = request.form.get('notes')
         game.notes = notes_value.strip() if notes_value and notes_value.strip() else None
         game.progress = int(request.form.get('progress') or 0)
+        # optional analytics fields
+        try:
+            game.hours = float(request.form.get('hours') or 0)
+        except Exception:
+            game.hours = 0
+        game.genre = request.form.get('genre') or None
         game.emoji = choose_game_emoji(game.title, game.platform)
         db.session.commit()
         return redirect(url_for('index'))
@@ -501,11 +584,13 @@ def delete_game(game_id):
 @login_required
 def stats():
     games = Game.query.filter_by(user_id=current_user.id).all()
-    
+
     # Procesar datos para los gráficos
     estados = {}
     plataformas = {}
-    
+    genero_count = {}
+    total_hours = 0.0
+
     completed_this_year = 0
     for g in games:
         estados[g.status] = estados.get(g.status, 0) + 1
@@ -516,9 +601,38 @@ def stats():
         except Exception:
             pass
 
+        # Horas jugadas (si existe)
+        try:
+            total_hours += float(g.hours or 0)
+        except Exception:
+            pass
+
+        # Género (puede ser cadena o lista separada por comas)
+        if g.genre:
+            parts = [p.strip() for p in g.genre.split(',') if p.strip()]
+            for p in parts:
+                genero_count[p] = genero_count.get(p, 0) + 1
+
+    # Abandoned vs Completed
+    abandoned_statuses = {'En Backlog', 'sin jugar'}
+    abandoned = sum(1 for g in games if (g.status or '').strip() in abandoned_statuses)
+    completed = sum(1 for g in games if (g.status or '').strip() == 'Completado')
+
     most_played_platform = None
     if plataformas:
         most_played_platform = max(plataformas.items(), key=lambda x: x[1])
+
+    # Top genres
+    top_genres = sorted(genero_count.items(), key=lambda x: x[1], reverse=True)
+    genre_labels = [g[0] for g in top_genres]
+    genre_data = [g[1] for g in top_genres]
+
+    # Top games by hours
+    games_with_hours = [(g.title, float(g.hours or 0), g.id) for g in games if (g.hours or 0) > 0]
+    games_with_hours.sort(key=lambda x: x[1], reverse=True)
+    top_hours = games_with_hours[:5]
+    hours_labels = [g[0] for g in top_hours]
+    hours_data = [g[1] for g in top_hours]
 
     return render_template('stats.html', 
                            estados_labels=list(estados.keys()), 
@@ -527,7 +641,51 @@ def stats():
                            plat_data=list(plataformas.values()),
                            total_games=len(games),
                            completed_this_year=completed_this_year,
-                           most_played_platform=most_played_platform)
+                           most_played_platform=most_played_platform,
+                           abandoned_count=abandoned,
+                           completed_count=completed,
+                           total_hours=round(total_hours,1),
+                           genre_labels=genre_labels,
+                           genre_data=genre_data,
+                           hours_labels=hours_labels,
+                           hours_data=hours_data)
+
+
+@app.route('/suggest')
+@login_required
+def suggest():
+    # Select a game from user's backlog using simple weighted heuristics
+    candidates = Game.query.filter(Game.user_id == current_user.id).filter(Game.status != 'Completado').all()
+    if not candidates:
+        flash('No hay juegos pendientes para sugerir.', 'warning')
+        return redirect(url_for('index'))
+
+    weights = []
+    for g in candidates:
+        w = 1.0
+        status = (g.status or '').strip()
+        if status == 'Jugando':
+            w *= 1.6
+        elif status.lower() == 'sin jugar' or status.lower() == 'en backlog':
+            w *= 1.2
+
+        try:
+            prog = float(g.progress or 0) / 100.0
+            w *= (1.0 - prog + 0.1)
+        except Exception:
+            pass
+
+        try:
+            rating = float(g.rating) if g.rating is not None else 5.0
+            w *= (1.0 + (rating - 5.0) / 10.0)
+        except Exception:
+            pass
+
+        weights.append(max(w, 0.01))
+
+    chosen = random.choices(candidates, weights=weights, k=1)[0]
+    flash(Markup(f'Sugerencia: <a href="{url_for("achievements", game_id=chosen.id)}">{chosen.title}</a> — ¡dale play!'), 'info')
+    return redirect(url_for('index'))
 
 
 @app.route('/profile')
@@ -550,18 +708,18 @@ def seed_games():
     # Solo añadir si no hay juegos para el usuario
     if Game.query.first() is None:
         juegos_iniciales = [
-            ("The Legend of Zelda: BOTW", "Nintendo Switch", "Completado", 100, 10, "Obra maestra"),
-            ("Bloodborne", "PS4 Pro", "Jugando", 45, 9, "Muy difícil"),
-            ("FIFA 18", "PS3", "Jugando", 20, 7, "Clásico"),
-            ("Dead Cells", "Nintendo Switch", "En Backlog", 0, 8, "Rogue-like"),
-            ("God of War Ragnarök", "PS5", "Completado", 100, 10, "Increíble historia"),
-            ("Elden Ring", "PC", "Jugando", 60, 9, "Mundo abierto vasto"),
-            ("The Last of Us Part II", "PS4 Pro", "Completado", 100, 10, "Impactante"),
-            ("Hollow Knight", "Nintendo Switch", "En Backlog", 0, 9, "Retador"),
-            ("Cyberpunk 2077", "PC", "En Backlog", 10, 8, "Mundo inmersivo"),
-            ("Brawl Stars", "Móvil", "Jugando", 80, 7, "Adictivo")
+            ("The Legend of Zelda: BOTW", "Nintendo Switch", "Completado", 100, 10, "Obra maestra", 120, 'Action-Adventure'),
+            ("Bloodborne", "PS4 Pro", "Jugando", 45, 9, "Muy difícil", 80, 'Action-RPG'),
+            ("FIFA 18", "PS3", "Jugando", 20, 7, "Clásico", 40, 'Sports'),
+            ("Dead Cells", "Nintendo Switch", "En Backlog", 0, 8, "Rogue-like", 15, 'Roguelike,Metroidvania'),
+            ("God of War Ragnarök", "PS5", "Completado", 100, 10, "Increíble historia", 50, 'Action-Adventure'),
+            ("Elden Ring", "PC", "Jugando", 60, 9, "Mundo abierto vasto", 200, 'Action-RPG,Open World'),
+            ("The Last of Us Part II", "PS4 Pro", "Completado", 100, 10, "Impactante", 90, 'Action-Adventure'),
+            ("Hollow Knight", "Nintendo Switch", "En Backlog", 0, 9, "Retador", 35, 'Metroidvania,Platformer'),
+            ("Cyberpunk 2077", "PC", "En Backlog", 10, 8, "Mundo inmersivo", 60, 'RPG,Open World'),
+            ("Brawl Stars", "Móvil", "Jugando", 80, 7, "Adictivo", 250, 'Multiplayer')
         ]
-        for titulo, plat, est, prog, rat, nota in juegos_iniciales:
+        for titulo, plat, est, prog, rat, nota, hrs, gen in juegos_iniciales:
             db.session.add(Game(
                 title=titulo,
                 platform=plat,
@@ -569,6 +727,8 @@ def seed_games():
                 progress=prog,
                 rating=rat,
                 notes=nota,
+                hours=hrs,
+                genre=gen,
                 emoji=choose_game_emoji(titulo, plat),
                 user_id=1
             ))

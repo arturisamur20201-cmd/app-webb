@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mi Backlog de Juegos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ site_name }} - Mi Backlog de Juegos</h2>
+            <a href="/logout" class="btn btn-outline-danger">Cerrar Sesión</a>
+        </div>
+
+        <div class="row">
+            <div class="col-12 col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h4>Añadir / Editar</h4>
+                    <form id="juegoForm">
+                        <input type="hidden" id="juegoId">
+                        <div class="mb-3">
+                            <label class="form-label">Título</label>
+                            <input type="text" class="form-control" id="inputTitulo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Plataforma</label>
+                            <input type="text" class="form-control" id="inputPlataforma" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-control" id="inputEstado">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Jugando">Jugando</option>
+                                <option value="Completado">Completado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Progreso (%)</label>
+                            <input type="number" class="form-control" id="inputPorcentaje" min="0" max="100" value="0">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-8">
+                <div class="table-responsive">
+                    <table id="juegosTable" class="table table-striped text-center align-middle shadow-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Plataforma</th>
+                                <th>Estado</th>
+                                <th>Progreso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

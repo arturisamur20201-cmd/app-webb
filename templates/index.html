@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Backlog</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-light">
+    <!-- Barra de Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <span class="brand-logo me-2" aria-hidden="true"></span>
+                <span class="brand-text">{{ site_name }}</span>
+            </a>
+
+            <form class="search-bar d-none d-lg-flex align-items-center ms-4 me-3" role="search">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input id="gameSearch" class="form-control search-input" type="search" placeholder="Buscar juegos..." aria-label="Buscar juegos">
+            </form>
+
+            <div class="d-flex align-items-center ms-auto gap-3">
+                <a href="{{ url_for('stats') }}" class="btn btn-sm btn-stats" title="Estadísticas">📊 Estadísticas</a>
+                {% if current_user.is_authenticated %}
+                <div class="dropdown">
+                    <div class="nav-user d-flex align-items-center dropdown-toggle" tabindex="0">
+                        <span class="badge bg-secondary account-pill me-2">Cuenta</span>
+                        <div class="text-start">
+                            <div class="fw-bold">{{ current_user.username }}</div>
+                            <div class="small text-muted">Perfil</div>
+                        </div>
+                        <div class="avatar ms-3">{{ current_user.username[0]|upper }}</div>
+                    </div>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('profile') }}">Ver perfil</a>
+                        <a href="{{ url_for('settings') }}">Configuración</a>
+                        <div class="dropdown-divider" style="height:1px;background:rgba(255,255,255,0.04);margin:0.4rem 0;"></div>
+                        <a href="{{ url_for('logout') }}" class="text-danger">Cerrar sesión</a>
+                    </div>
+                </div>
+                {% else %}
+                <a class="btn btn-sm btn-outline-light" href="{{ url_for('login') }}">Iniciar sesión</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="site-hero mb-4 text-center">
+            <h1>{{ site_name }}</h1>
+            <p class="lead">Organiza, prioriza y disfruta tu colección de juegos</p>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0">Mis Juegos ({{ total_games }})</h2>
+            <a href="{{ url_for('add_game') }}" class="btn btn-primary">+ Añadir Juego</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="row row-cols-1 row-cols-md-2 g-3" id="gamesList">
+                    {% for game in games %}
+                    <div class="col">
+                        <div class="game-card d-flex gap-3 p-4">
+                            <div class="emoji-badge d-flex align-items-center justify-content-center">{{ game.emoji or '🎮' }}</div>
+                            <div class="game-info flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ game.title }}</h5>
+                                        <div class="mb-2"><span class="platform-badge">{{ game.platform }}</span></div>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if game.status == 'Completado' %}
+                                            <span class="badge bg-success">Completado</span>
+                                        {% elif game.status == 'Jugando' %}
+                                            <span class="badge bg-primary">Jugando</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">sin jugar</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="game-info-row d-flex flex-wrap gap-2 align-items-center mb-3">
+                                        {% if game.rating %}
+                                        <span class="badge bg-info text-dark">{{ game.rating }}/10</span>
+                                        {% endif %}
+                                        <span class="badge bg-secondary text-white">{{ game.progress }}% progreso</span>
+                                    </div>
+                                    {% if game.notes %}
+                                    <div class="text-muted small mb-3">{{ game.notes }}</div>
+                                    {% endif %}
+                                    <div class="progress" style="height: 18px;">
+                                        <div class="progress-bar {{ 'bg-success' if game.progress == 100 else 'bg-primary' }}" role="progressbar" style="width: {{ game.progress }}%;" aria-valuenow="{{ game.progress }}" aria-valuemin="0" aria-valuemax="100">{{ game.progress }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="game-actions text-end">
+                                <a href="{{ url_for('edit_game', game_id=game.id) }}" class="btn btn-sm btn-warning mb-2">Editar</a>
+                                <form action="{{ url_for('delete_game', game_id=game.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este juego?')">Eliminar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-4 text-muted">Aún no has añadido ningún juego. ¡Empieza ahora!</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('gameSearch');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', function() {
+                const filter = this.value.toLowerCase().trim();
+                const cards = document.querySelectorAll('#gamesList .col');
+
+                cards.forEach(card => {
+                    const title = card.querySelector('.game-info h5')?.textContent.toLowerCase() || '';
+                    const platform = card.querySelector('.platform-badge')?.textContent.toLowerCase() || '';
+                    const status = card.querySelector('.badge')?.textContent.toLowerCase() || '';
+                    const matches = title.includes(filter) || platform.includes(filter) || status.includes(filter);
+                    card.style.display = matches || filter === '' ? 'block' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

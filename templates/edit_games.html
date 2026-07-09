@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Juego</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card panel-card shadow-sm mx-auto border-0 overflow-hidden" style="max-width: 720px;">
+            <div class="card-body p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h4 mb-1">Editar juego</h1>
+                        <p class="text-muted mb-0">Actualiza el estado o las notas de tu juego.</p>
+                    </div>
+                    <span class="badge bg-secondary">To-Play</span>
+                </div>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Título:</label>
+                        <input type="text" name="title" class="form-control" value="{{ game.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Plataforma:</label>
+                        <select name="platform" class="form-control">
+                            {% for p in platforms %}
+                            <option value="{{ p }}" {% if game.platform == p %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Estado:</label>
+                        <select name="status" class="form-control">
+                            {% for s in statuses %}
+                            <option value="{{ s }}" {% if game.status == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Progreso (%):</label>
+                        <input type="number" name="progress" class="form-control" value="{{ game.progress }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label>Puntuación (1-10):</label>
+                        <input type="number" name="rating" class="form-control" value="{{ game.rating if game.rating else '' }}" min="1" max="10">
+                    </div>
+                    <div class="mb-3">
+                        <label>Notas:</label>
+                        <textarea name="notes" class="form-control" rows="3">{{ game.notes if game.notes else '' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Actualizar</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

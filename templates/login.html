@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - To-Play List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body class="bg-light">
+    <div class="container py-6">
+      <div class="row justify-content-center">
+        <div class="col-12 col-md-5">
+          <div class="card auth-card shadow-sm border-0 overflow-hidden">
+            <div class="card-body p-5">
+              <div class="mb-5 text-center">
+                <div class="logo-circle mx-auto mb-3">T</div>
+                <h1 class="h4 mb-2">Bienvenido a To-Play List</h1>
+                <p class="text-muted">Accede rápido y gestiona tu colección de juegos con estilo.</p>
+              </div>
+              <h2 class="h5 mb-4">Iniciar sesión</h2>
+              {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-danger text-center" role="alert">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+              <form method="post" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                  <label for="username" class="form-label">Usuario</label>
+                  <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="mb-3">
+                  <label for="password" class="form-label">Contraseña</label>
+                  <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Entrar</button>
+                <div class="text-center mt-3">
+  <p class="mb-0 text-muted small">¿No tienes cuenta? <a href="{{ url_for('registro') }}">Regístrate aquí</a></p>
+</div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

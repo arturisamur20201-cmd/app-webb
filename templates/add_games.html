@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Añadir Juego</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card panel-card shadow-sm mx-auto border-0 overflow-hidden" style="max-width: 720px;">
+            <div class="card-body p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h4 mb-1">Añadir nuevo juego</h1>
+                        <p class="text-muted mb-0">Completa los datos para agregar tu próximo título.</p>
+                    </div>
+                    <span class="badge bg-secondary">To-Play</span>
+                </div>
+                <form method="POST" action="{{ url_for('add_game') }}">
+                    <div class="mb-3">
+                        <label>Título:</label>
+                        <input type="text" name="title" class="form-control" required>
+                        <div class="form-text text-muted">Agrega el nombre de tu juego.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Plataforma:</label>
+                        <select name="platform" class="form-control" required>
+                            <option value="PS3">PS3</option>
+                            <option value="PS4 Pro">PS4 Pro</option>
+                            <option value="PS5">PS5</option>
+                            <option value="Nintendo Switch">Nintendo Switch</option>
+                            <option value="PC">PC</option>
+                            <option value="Móvil">Móvil</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Estado:</label>
+                        <select name="status" class="form-control">
+                            <option value="sin jugar">sin jugar</option>
+                            <option value="Jugando">Jugando</option>
+                            <option value="Completado">Completado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Progreso (%):</label>
+                        <input type="number" name="progress" class="form-control" value="0" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label>Puntuación (1-10):</label>
+                        <input type="number" name="rating" class="form-control" min="1" max="10">
+                    </div>
+                    <div class="mb-3">
+                        <label>Notas:</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

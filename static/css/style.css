@@ -1,0 +1,747 @@
+/* =========================================
+   Variables de Color y Tema
+   ========================================= */
+:root {
+    --bg: #02040b;
+    --panel: rgba(10, 15, 32, 0.92);
+    --panel-soft: rgba(18, 26, 52, 0.92);
+    --surface: rgba(255,255,255,0.06);
+    --text: #eef2ff;
+    --muted: #9ca3af;
+    --border: rgba(59, 130, 246, 0.24);
+    --accent: #0f172a;
+    --accent-soft: rgba(30, 41, 59, 0.92);
+    --accent-2: #0f3460;
+    --accent-3: #1e40af;
+    --success: #22c55e;
+    --warning: #fbbf24;
+    --danger: #ef4444;
+    --font: 'Inter', system-ui, sans-serif;
+}
+
+/* =========================================
+   Reset y Estilos Generales
+   ========================================= */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font);
+    background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.22), transparent 22%),
+                radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.22), transparent 20%),
+                radial-gradient(circle at 70% 20%, rgba(251, 113, 133, 0.18), transparent 15%),
+                linear-gradient(180deg, #050611 0%, #081022 100%);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* =========================================
+   Navbar y contenedores
+   ========================================= */
+.navbar,
+.card,
+.form-control,
+.btn,
+.table {
+    border-radius: 1rem;
+}
+
+.navbar {
+    background: rgba(3, 10, 24, 0.98) !important;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.18) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+}
+
+.navbar-brand,
+.nav-link,
+.navbar .btn,
+.navbar .badge {
+    color: #edf2ff !important;
+}
+
+.search-bar {
+    background: rgba(229, 231, 235, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    min-width: 320px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.search-input {
+    background: transparent !important;
+    border: none !important;
+    color: #f8fafc !important;
+    box-shadow: none !important;
+    padding-left: 0.55rem !important;
+}
+
+.search-input::placeholder {
+    color: rgba(226, 232, 240, 0.7) !important;
+    opacity: 1;
+}
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 0 0.15rem rgba(59, 130, 246, 0.18) !important;
+    outline: none !important;
+}
+
+.search-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+@media (max-width: 991px) {
+    .search-bar {
+        display: none !important;
+    }
+}
+
+
+.nav-link:hover {
+    color: #ffffff !important;
+}
+
+.container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* =========================================
+   Tarjetas y paneles
+   ========================================= */
+.card {
+    background: rgba(10, 14, 28, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.14) !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18) !important;
+}
+
+.card-body {
+    color: #eef2ff !important;
+}
+
+.auth-card,
+.panel-card,
+.hero-card {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.auth-card,
+.panel-card {
+    border-radius: 1.5rem;
+}
+
+.hero-card {
+    padding: 2rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 32px 90px rgba(5, 10, 20, 0.45);
+}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1,
+.page-header h2,
+.page-header h3 {
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.page-header p {
+    color: var(--muted) !important;
+    margin-bottom: 0;
+}
+
+.form-control,
+.form-select {
+    min-height: 52px;
+    font-size: 0.95rem;
+}
+
+.btn-primary,
+.btn-success,
+.btn-warning,
+.btn-danger,
+.btn-outline-light {
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-warning:hover,
+.btn-danger:hover,
+.btn-outline-light:hover {
+    transform: translateY(-1px);
+}
+
+.btn-outline-light {
+    color: #e2e8f0 !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+
+.btn-outline-light:hover {
+    background: rgba(255,255,255,0.08) !important;
+}
+
+.logo-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 1.4rem;
+    box-shadow: 0 12px 30px rgba(124,58,237,0.35);
+}
+
+.panel-card {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+.game-card {
+    background: rgba(18, 24, 48, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.12);
+    border-radius: 1.25rem;
+    align-items: start;
+    gap: 1.25rem;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    padding: 1.35rem;
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    min-height: 240px;
+}
+
+.game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.game-info {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.game-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.game-actions .btn {
+    min-width: 100px;
+    width: 100%;
+    max-width: 150px;
+}
+
+.emoji-badge {
+    width: 72px;
+    height: 72px;
+    border-radius: 1.25rem;
+    background: rgba(124, 58, 237, 0.18);
+    border: 1px solid rgba(124, 58, 237, 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.game-info h5 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.game-info .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.game-info .meta-row .badge {
+    margin-bottom: 0;
+}
+
+.game-actions .btn {
+    min-width: 100px;
+}
+
+    .stats-grid .card,
+    .stats-grid .hero-card {
+        min-height: 180px;
+    }
+
+    .stats-grid .card,
+    .stats-grid .hero-card,
+    .stats-grid .hero-card + .card {
+        margin-bottom: 1rem;
+    }
+
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text) !important;
+}
+
+p,
+.small,
+.text-muted,
+.form-text {
+    color: var(--muted) !important;
+}
+
+/* =========================================
+   Tablas y contenido de juegos
+   ========================================= */
+.table {
+    color: var(--text) !important;
+    background: rgba(15, 23, 42, 0.94) !important;
+    border: 1px solid rgba(99, 102, 241, 0.22) !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02) !important;
+}
+
+.table thead {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.92), rgba(59, 130, 246, 0.88)) !important;
+}
+
+.table th,
+.table td {
+    border-top: 1px solid rgba(148, 163, 184, 0.08) !important;
+    vertical-align: middle !important;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.badge {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #f8fafc !important;
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, rgba(62, 123, 255, 0.24), rgba(139, 92, 246, 0.18)) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(139, 92, 246, 0.28) !important;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.08) inset !important;
+}
+
+.account-summary {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(14, 165, 233, 0.08));
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    padding: 1rem 1.25rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 18px 40px rgba(20, 40, 100, 0.14);
+}
+
+.account-badge {
+    background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.6rem 0.95rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+}
+
+.account-summary .text-muted {
+    margin-bottom: 0;
+}
+
+.account-summary .small {
+    color: rgba(248, 250, 252, 0.75) !important;
+}
+
+/* Plataforma: badge con texto oscuro para mayor legibilidad */
+.platform-badge {
+    background: linear-gradient(90deg, rgba(17,24,39,0.95), rgba(30,41,59,0.95)) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(148,163,184,0.06) !important;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.45) inset !important;
+    padding: 0.28rem 0.65rem !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    display: inline-block !important;
+    text-transform: none !important;
+    border-radius: 0.5rem !important;
+}
+select.form-control,
+select.form-select {
+    background: rgba(15, 23, 42, 0.98) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+}
+
+select.form-control option,
+select.form-select option {
+    background: #111827 !important;
+    color: #f8fafc !important;
+}
+
+select.form-control:focus,
+select.form-select:focus {
+    border-color: rgba(124, 58, 237, 0.9) !important;
+    box-shadow: 0 0 0 0.25rem rgba(124, 58, 237, 0.2) !important;
+}
+
+/* =========================================
+   Botones
+   ========================================= */
+.btn-primary {
+    background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+    border: none !important;
+    box-shadow: 0 16px 36px rgba(139, 92, 246, 0.28) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: linear-gradient(135deg, #7c3aed, #38bdf8) !important;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(14, 165, 233, 0.14)) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(139, 92, 246, 0.22) !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.btn-danger {
+    background: #ef4444 !important;
+    border: none !important;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #fb7185 55%, #f97316 100%) !important;
+    border: none !important;
+    color: #0f172a !important;
+    box-shadow: 0 14px 28px rgba(251, 113, 133, 0.22) !important;
+}
+
+/* =========================================
+   Formularios
+   ========================================= */
+.form-control {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+    color: #e2e8f0 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+.form-control:focus {
+    background: rgba(15, 23, 42, 1) !important;
+    border-color: rgba(124, 58, 237, 0.9) !important;
+    box-shadow: 0 0 0 0.25rem rgba(124, 58, 237, 0.2) !important;
+    color: #fff !important;
+}
+
+.form-label {
+    color: #cbd5e1 !important;
+}
+
+/* =========================================
+   Progreso más bonito
+   ========================================= */
+.progress {
+    background: rgba(148, 163, 184, 0.16) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    height: 24px !important;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+}
+
+.progress-bar {
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #7c3aed 0%, #22d3ee 45%, #38bdf8 100%) !important;
+    transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background-size: 200% 100% !important;
+    animation: progress-wave 3.5s linear infinite !important;
+}
+
+.progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40px;
+    width: 40px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.35);
+    transform: skewX(-25deg);
+    opacity: 0.45;
+    animation: shine-slide 2s ease-in-out infinite !important;
+}
+
+.progress-bar.bg-success {
+    background: linear-gradient(90deg, #22c55e 0%, #4ade80 55%, #22c55e 100%) !important;
+}
+
+.progress-bar.bg-warning {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 55%, #f59e0b 100%) !important;
+}
+
+.progress-bar.bg-danger {
+    background: linear-gradient(90deg, #ef4444 0%, #f87171 55%, #ef4444 100%) !important;
+}
+
+.table .progress-bar {
+    min-width: 2.5rem !important;
+    font-size: 0.78rem !important;
+}
+
+.progress-bar[style] {
+    box-shadow: 0 0 26px rgba(124, 58, 237, 0.28) !important;
+}
+
+@keyframes progress-wave {
+    0% { background-position: 0 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes shine-slide {
+    0% { left: -40px; opacity: 0.2; }
+    50% { left: 100%; opacity: 0.55; }
+    100% { left: 200%; opacity: 0.2; }
+}
+
+/* =========================================
+   Ajustes de tarjetas en index
+   ========================================= */
+.container h1,
+.container h2 {
+    font-weight: 700;
+}
+
+.card.shadow-sm {
+    background: rgba(15, 23, 42, 0.98) !important;
+}
+
+.alert {
+    background: rgba(239, 68, 68, 0.14) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #fee2e2 !important;
+}
+
+/* Ajuste para bg-light usado en algunas páginas */
+.bg-light {
+    background-color: transparent !important;
+}
+
+body.bg-light {
+    background: radial-gradient(circle at top, rgba(139, 92, 246, 0.18), transparent 25%),
+                linear-gradient(180deg, #0b1120 0%, #090d18 100%) !important;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
+    .container {
+        padding-top: 1rem;
+    }
+}
+
+/* =========================================
+   Hero del Sitio (Página de inicio)
+   ========================================= */
+.site-hero {
+    text-align: center;
+    padding: 2.5rem 1.25rem;
+    margin-bottom: 1.75rem;
+    background: rgba(15, 23, 42, 0.92);
+    border-radius: 1rem;
+    border: 1px solid rgba(59, 130, 246, 0.16);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+}
+.site-hero h1 {
+    font-size: clamp(2rem, 3vw, 3rem);
+    font-weight: 900;
+    margin: 0 0 0.5rem 0;
+    color: #ffffff;
+    background: linear-gradient(90deg, #7c3aed, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.site-hero p.lead {
+    color: var(--muted) !important;
+    margin: 0;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Navbar enhancements */
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg,#7c3aed,#22d3ee);
+    box-shadow: 0 6px 20px rgba(124,58,237,0.28);
+}
+.brand-text {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+}
+.btn-stats {
+    background: linear-gradient(90deg,#22d3ee,#8b5cf6);
+    color: #071022;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(124,58,237,0.22);
+    border: none;
+}
+
+.btn-stats:hover,
+.btn-stats:focus {
+    background: linear-gradient(90deg,#38bdf8,#a855f7);
+}
+.btn-stats:hover,
+.btn-stats:focus {
+    transform: translateY(-1px);
+}
+.nav-user {
+    gap: 0.75rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+}
+
+.nav-user .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(90deg,#f97316,#f59e0b);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #071022;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+.nav-user .small {
+    color: var(--muted) !important;
+}
+
+.account-pill {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(59, 130, 246, 0.9)) !important;
+    color: #fff !important;
+    padding: 0.45rem 0.85rem !important;
+    border-radius: 999px !important;
+    box-shadow: 0 10px 24px rgba(59, 130, 246, 0.18) inset !important;
+}
+
+/* Dropdown (CSS-only) */
+.dropdown {
+    position: relative;
+}
+.dropdown .dropdown-toggle {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+}
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,0.94));
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    min-width: 160px;
+    box-shadow: 0 12px 30px rgba(2,6,23,0.6);
+    z-index: 60;
+}
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu {
+    display: block;
+}
+.dropdown-menu a {
+    display: block;
+    padding: 0.45rem 0.6rem;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 0.375rem;
+}
+.dropdown-menu a:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+
+
+.table td .platform-badge {
+    font-size: 0.95rem !important;
+    padding: 0.35rem 0.7rem !important;
+}
+
+/* Filas del listado: tonos suaves para evitar áreas "blanco pelado" */
+.table tbody tr {
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+}
+.table td {
+    padding-top: 0.9rem !important;
+    padding-bottom: 0.9rem !important;
+    vertical-align: middle !important;
+}
+
+.card .table {
+    background: transparent !important;
+}
+

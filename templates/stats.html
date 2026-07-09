@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Estadísticas - To-Play List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <span class="brand-logo me-2" aria-hidden="true"></span>
+                <span class="brand-text">{{ site_name }}</span>
+            </a>
+            <div class="d-flex align-items-center ms-auto gap-3">
+                <a class="btn btn-sm btn-stats" href="{{ url_for('index') }}">Mis Juegos</a>
+                <a class="btn btn-sm btn-outline-light" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="page-header text-center mb-4">
+            <h1>Tus estadísticas</h1>
+            <p class="lead">Una vista clara de tu progreso y plataformas favoritas.</p>
+        </div>
+
+        <div class="row gy-5 stats-grid">
+            <div class="col-12 col-lg-4 mx-auto">
+                <div class="hero-card text-center">
+                    <h2 class="h4 mb-2">Total de juegos registrados</h2>
+                    <p class="display-6 mb-0">{{ total_games }}</p>
+                </div>
+            </div>
+            <div class="col-12 col-lg-8">
+                <div class="row g-5 stats-grid">
+                        <div class="col-12 col-md-4">
+                            <div class="hero-card text-center">
+                                <h2 class="h5 mb-1">Total de juegos</h2>
+                                <p class="display-6 mb-0">{{ total_games }}</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="card panel-card h-100 text-center p-3">
+                                <h6 class="mb-1">Completados este año</h6>
+                                <div class="h3 mb-0">{{ completed_this_year }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="card panel-card h-100 text-center p-3">
+                                <h6 class="mb-1">Plataforma más jugada</h6>
+                                <div class="h5 mb-0">{% if most_played_platform %}{{ most_played_platform[0] }} ({{ most_played_platform[1] }}){% else %}-{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-5">
+                        <div class="col-md-6 mb-4">
+                            <div class="card panel-card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h4 class="card-title text-center">Estado del Catálogo</h4>
+                                    <canvas id="estadoChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card panel-card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h4 class="card-title text-center">Juegos por Plataforma</h4>
+                                    <canvas id="plataformaChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gráfico de Estados (Circular)
+        const ctxEstado = document.getElementById('estadoChart').getContext('2d');
+        new Chart(ctxEstado, {
+            type: 'doughnut',
+            data: {
+                labels: {{ estados_labels | tojson }},
+                datasets: [{
+                    data: {{ estados_data | tojson }},
+                    backgroundColor: ['#198754', '#ffc107', '#0d6efd', '#dc3545'],
+                }]
+            }
+        });
+
+        // Gráfico de Plataformas (Barras)
+        const ctxPlataforma = document.getElementById('plataformaChart').getContext('2d');
+        new Chart(ctxPlataforma, {
+            type: 'bar',
+            data: {
+                labels: {{ plat_labels | tojson }},
+                datasets: [{
+                    label: 'Cantidad de Juegos',
+                    data: {{ plat_data | tojson }},
+                    backgroundColor: '#6f42c1',
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

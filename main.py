@@ -410,6 +410,31 @@ DEFAULT_RECOMMENDED_GAMES = [
     },
 ]
 
+NINTENDO_FALLBACK_GAMES = [
+    {'title': 'The Legend of Zelda: Breath of the Wild', 'platform': 'Nintendo Switch'},
+    {'title': 'Super Mario Odyssey', 'platform': 'Nintendo Switch'},
+    {'title': 'Mario Kart 8 Deluxe', 'platform': 'Nintendo Switch'},
+    {'title': 'Animal Crossing: New Horizons', 'platform': 'Nintendo Switch'},
+    {'title': 'Splatoon 2', 'platform': 'Nintendo Switch'},
+    {'title': 'Metroid Dread', 'platform': 'Nintendo Switch'},
+    {'title': 'Luigi\'s Mansion 3', 'platform': 'Nintendo Switch'},
+    {'title': 'Super Smash Bros. Ultimate', 'platform': 'Nintendo Switch'},
+    {'title': 'The Legend of Zelda: Skyward Sword', 'platform': 'Wii'},
+    {'title': 'Super Mario Galaxy', 'platform': 'Wii'},
+    {'title': 'Mario Kart Wii', 'platform': 'Wii'},
+    {'title': 'Donkey Kong Country Returns', 'platform': 'Wii'},
+    {'title': 'Metroid Prime 3: Corruption', 'platform': 'Wii'},
+    {'title': 'The Legend of Zelda: Phantom Hourglass', 'platform': 'Nintendo DS'},
+    {'title': 'Pokémon Diamond', 'platform': 'Nintendo DS'},
+    {'title': 'Pokémon Pearl', 'platform': 'Nintendo DS'},
+    {'title': 'Pokémon Black', 'platform': 'Nintendo DS'},
+    {'title': 'Pokémon White', 'platform': 'Nintendo DS'},
+    {'title': 'Mario Kart DS', 'platform': 'Nintendo DS'},
+    {'title': 'New Super Mario Bros.', 'platform': 'Nintendo DS'},
+    {'title': 'Kirby: Canvas Curse', 'platform': 'Nintendo DS'},
+    {'title': 'Yoshi\'s Island DS', 'platform': 'Nintendo DS'},
+]
+
 
 def resolve_steam_image(appid, title=None):
     if not appid:
@@ -504,10 +529,10 @@ def build_rawg_suggestion_payload(payload):
     return suggestions[:6]
 
 
-def merge_game_suggestions(steam_results, rawg_results, limit=6):
+def merge_game_suggestions(steam_results, rawg_results, local_results=None, limit=6):
     merged = []
     seen = set()
-    for item in (steam_results or []) + (rawg_results or []):
+    for item in (steam_results or []) + (rawg_results or []) + (local_results or []):
         name = (item.get('name') or '').strip().lower()
         if not name or name in seen:
             continue
@@ -516,6 +541,26 @@ def merge_game_suggestions(steam_results, rawg_results, limit=6):
         if len(merged) >= limit:
             break
     return merged
+
+
+def search_local_nintendo_games(query, limit=6):
+    term = (query or '').strip().lower()
+    if len(term) < 2:
+        return []
+    suggestions = []
+    for item in NINTENDO_FALLBACK_GAMES:
+        if term in item['title'].lower():
+            suggestions.append({
+                'appid': None,
+                'name': item['title'],
+                'price': '',
+                'image': '',
+                'platform': item['platform'],
+                'source': 'local',
+            })
+            if len(suggestions) >= limit:
+                break
+    return suggestions
 
 
 def build_achievement_payloads(schema_payload, player_payload):
@@ -839,7 +884,8 @@ def game_suggestions():
     query = request.args.get('query', '').strip()
     steam_results = search_steam_games(query)
     rawg_results = search_rawg_games(query)
-    return jsonify(merge_game_suggestions(steam_results, rawg_results))
+    local_results = search_local_nintendo_games(query)
+    return jsonify(merge_game_suggestions(steam_results, rawg_results, local_results))
 
 @app.route('/edit/<int:game_id>', methods=['GET', 'POST'])
 @login_required

@@ -10,6 +10,7 @@ from main import (
     build_steam_suggestion_payload,
     build_rawg_suggestion_payload,
     merge_game_suggestions,
+    search_local_nintendo_games,
     db,
     ensure_schema,
     generate_password_hash,
@@ -58,6 +59,29 @@ class SteamIntegrationTests(unittest.TestCase):
         self.assertEqual(result[0]["name"], "Hades")
         self.assertEqual(result[1]["name"], "Mario")
         self.assertEqual(result[2]["name"], "Zelda")
+
+    def test_build_steam_suggestion_payload_uses_default_image(self):
+        payload = {
+            "items": [
+                {"id": 123, "name": "Hades", "price": "$"},
+            ]
+        }
+        result = build_steam_suggestion_payload(payload)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
+
+    def test_build_rawg_suggestion_payload_uses_default_image(self):
+        payload = {
+            "results": [
+                {"id": 777, "name": "Zelda", "platforms": [{"platform": {"name": "Nintendo Switch"}}]},
+            ]
+        }
+        result = build_rawg_suggestion_payload(payload)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
+
+    def test_search_local_nintendo_games_uses_default_image(self):
+        result = search_local_nintendo_games('Zelda')
+        self.assertTrue(result)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
 
     def test_build_achievement_payloads_uses_schema_and_player_state(self):
         schema_payload = {

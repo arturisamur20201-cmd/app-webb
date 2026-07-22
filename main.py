@@ -19,8 +19,8 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SITE_NAME'] = 'To-Play List'
 
-
 basedir = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_GAME_IMAGE_URL = '/static/img/logo.svg'
 
 # Resolve database path early so app config can use it.
 def resolve_database_uri():
@@ -49,7 +49,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
-# Models (minimal fields needed by the app)
+# Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -59,8 +59,8 @@ class User(UserMixin, db.Model):
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(250), nullable=False)
-    platform = db.Column(db.String(120))
-    status = db.Column(db.String(80))
+    platform = db.Column(db.String(120), default='PC')
+    status = db.Column(db.String(80), default='sin jugar')
     progress = db.Column(db.Integer, default=0)
     rating = db.Column(db.Float, nullable=True)
     notes = db.Column(db.Text, nullable=True)
@@ -69,7 +69,7 @@ class Game(db.Model):
     emoji = db.Column(db.String(10), nullable=True)
     steam_app_id = db.Column(db.String(50), nullable=True)
     steam_name = db.Column(db.String(250), nullable=True)
-    image_url = db.Column(db.String(500), nullable=True)
+    image_url = db.Column(db.String(500), nullable=True, default=DEFAULT_GAME_IMAGE_URL)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     achievements = db.relationship('Achievement', backref='game', lazy='dynamic')
@@ -80,6 +80,8 @@ class Achievement(db.Model):
     title = db.Column(db.String(250), nullable=False)
     description = db.Column(db.Text)
     difficulty = db.Column(db.Integer, default=3)
+    unlocked = db.Column(db.Boolean, default=False)
+    steam_api_name = db.Column(db.String(250), nullable=True)
     source = db.Column(db.String(50))
     game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -105,38 +107,24 @@ def ensure_schema():
     except Exception:
         db.session.rollback()
 
-# DEFAULT_RECOMMENDED_GAMES is used by the recommendation helper below.
-DEFAULT_RECOMMENDED_GAMES = []
 
-NINTENDO_FALLBACK_GAMES = [
-    {'title': 'The Legend of Zelda: Breath of the Wild', 'platform': 'Nintendo Switch'},
-    {'title': 'Super Mario Odyssey', 'platform': 'Nintendo Switch'},
-    {'title': 'Mario Kart 8 Deluxe', 'platform': 'Nintendo Switch'},
-    {'title': 'Animal Crossing: New Horizons', 'platform': 'Nintendo Switch'},
-    {'title': 'Splatoon 2', 'platform': 'Nintendo Switch'},
-    {'title': 'Metroid Dread', 'platform': 'Nintendo Switch'},
-    {'title': 'Luigi\'s Mansion 3', 'platform': 'Nintendo Switch'},
-    {'title': 'Super Smash Bros. Ultimate', 'platform': 'Nintendo Switch'},
-    {'title': 'The Legend of Zelda: Skyward Sword', 'platform': 'Wii'},
-    {'title': 'Super Mario Galaxy', 'platform': 'Wii'},
-    {'title': 'Mario Kart Wii', 'platform': 'Wii'},
-    {'title': 'Donkey Kong Country Returns', 'platform': 'Wii'},
-    {'title': 'Metroid Prime 3: Corruption', 'platform': 'Wii'},
-    {'title': 'The Legend of Zelda: Phantom Hourglass', 'platform': 'Nintendo DS'},
-    {'title': 'Pokémon Diamond', 'platform': 'Nintendo DS'},
-    {'title': 'Pokémon Pearl', 'platform': 'Nintendo DS'},
-    {'title': 'Pokémon Black', 'platform': 'Nintendo DS'},
-    {'title': 'Pokémon White', 'platform': 'Nintendo DS'},
-    {'title': 'Mario Kart DS', 'platform': 'Nintendo DS'},
-    {'title': 'New Super Mario Bros.', 'platform': 'Nintendo DS'},
-    {'title': 'Kirby: Canvas Curse', 'platform': 'Nintendo DS'},
-    {'title': 'Yoshi\'s Island DS', 'platform': 'Nintendo DS'},
+STEAM_FALLBACK_GAMES = [
+    {'title': 'Counter-Strike 2', 'platform': 'PC', 'steam_app_id': '730'},
+    {'title': 'Dota 2', 'platform': 'PC', 'steam_app_id': '570'},
+    {'title': 'Half-Life 2', 'platform': 'PC', 'steam_app_id': '220'},
+    {'title': 'Portal 2', 'platform': 'PC', 'steam_app_id': '620'},
+    {'title': 'Left 4 Dead 2', 'platform': 'PC', 'steam_app_id': '550'},
+    {'title': 'Terraria', 'platform': 'PC', 'steam_app_id': '105600'},
+    {'title': 'Stardew Valley', 'platform': 'PC', 'steam_app_id': '413150'},
+    {'title': 'Hollow Knight', 'platform': 'PC', 'steam_app_id': '367520'},
+    {'title': 'Celeste', 'platform': 'PC', 'steam_app_id': '103100'},
+    {'title': 'Hades', 'platform': 'PC', 'steam_app_id': '310950'}
 ]
 
 
 def resolve_steam_image(appid, title=None):
     if not appid:
-        return ''
+        return DEFAULT_GAME_IMAGE_URL
     details = fetch_steam_app_details(appid)
     image_url = details.get('header_image') or details.get('background') or ''
     if image_url:
@@ -150,27 +138,27 @@ def resolve_steam_image(appid, title=None):
                 image_url = details.get('header_image') or details.get('background') or ''
                 if image_url:
                     return image_url
-    return f'https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg'
+    return f'https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg' or DEFAULT_GAME_IMAGE_URL
 
 
 def get_session_recommendation():
     rec = session.get('recommended_game')
     if rec:
         return rec
-    pool = DEFAULT_RECOMMENDED_GAMES or NINTENDO_FALLBACK_GAMES
+    pool = STEAM_FALLBACK_GAMES
     if not pool:
         return {
             'title': 'Recomendado',
-            'platform': 'General',
+            'platform': 'PC',
             'steam_app_id': None,
             'note': 'No hay recomendaciones disponibles en este momento.',
-            'image_url': '',
+            'image_url': DEFAULT_GAME_IMAGE_URL,
         }
     selected = random.choice(pool)
     image_url = resolve_steam_image(selected.get('steam_app_id'), selected.get('title'))
     rec = {
         'title': selected.get('title', 'Juego recomendado'),
-        'platform': selected.get('platform', 'Desconocido'),
+        'platform': selected.get('platform', 'PC'),
         'steam_app_id': selected.get('steam_app_id'),
         'note': selected.get('note', ''),
         'image_url': image_url,
@@ -197,7 +185,7 @@ def build_steam_suggestion_payload(payload):
             'appid': int(appid),
             'name': name,
             'price': item.get('price') or '',
-            'image': item.get('tiny_image') or '',
+            'image': item.get('tiny_image') or DEFAULT_GAME_IMAGE_URL,
             'platform': 'PC',
             'source': 'steam',
         })
@@ -229,17 +217,17 @@ def build_rawg_suggestion_payload(payload):
             'appid': int(appid),
             'name': name,
             'price': '',
-            'image': item.get('background_image') or '',
-            'platform': ' / '.join(platforms[:3]),
+            'image': item.get('background_image') or DEFAULT_GAME_IMAGE_URL,
+            'platform': 'PC',
             'source': 'rawg',
         })
     return suggestions[:6]
 
 
-def merge_game_suggestions(steam_results, rawg_results, local_results=None, limit=6):
+def merge_game_suggestions(steam_results, rawg_results=None, limit=6):
     merged = []
     seen = set()
-    for item in (steam_results or []) + (rawg_results or []) + (local_results or []):
+    for item in (steam_results or []) + (rawg_results or []):
         name = (item.get('name') or '').strip().lower()
         if not name or name in seen:
             continue
@@ -248,26 +236,6 @@ def merge_game_suggestions(steam_results, rawg_results, local_results=None, limi
         if len(merged) >= limit:
             break
     return merged
-
-
-def search_local_nintendo_games(query, limit=6):
-    term = (query or '').strip().lower()
-    if len(term) < 2:
-        return []
-    suggestions = []
-    for item in NINTENDO_FALLBACK_GAMES:
-        if term in item['title'].lower():
-            suggestions.append({
-                'appid': None,
-                'name': item['title'],
-                'price': '',
-                'image': '',
-                'platform': item['platform'],
-                'source': 'local',
-            })
-            if len(suggestions) >= limit:
-                break
-    return suggestions
 
 
 def build_achievement_payloads(schema_payload, player_payload):
@@ -298,9 +266,6 @@ def build_achievement_payloads(schema_payload, player_payload):
 
 
 def compute_stats(games):
-    """Compute aggregated stats from a list of Game objects and return a dict of values
-    used by the stats view. Handles missing attributes safely.
-    """
     estados = {}
     plataformas = {}
     genero_count = {}
@@ -346,7 +311,6 @@ def compute_stats(games):
     genre_labels = [g[0] for g in top_genres]
     genre_data = [g[1] for g in top_genres]
 
-    # Top games by hours
     games_with_hours = []
     for g in games:
         try:
@@ -486,23 +450,17 @@ def import_steam_achievements_for_game(game):
 
 def choose_game_emoji(title, platform):
     platform_emojis = {
-        'PS3': '🎮',
-        'PS4 Pro': '🕹️',
-        'PS5': '🕹️',
-        'Nintendo Switch': '🟢',
         'PC': '💻',
-        'Móvil': '📱',
+        'Steam Deck': '🕹️',
     }
     if platform in platform_emojis:
         return platform_emojis[platform]
     title_lower = (title or '').lower()
-    if 'zelda' in title_lower or 'mario' in title_lower or 'pokemon' in title_lower:
-        return '🪄'
-    if 'war' in title_lower or 'doom' in title_lower or 'halo' in title_lower or 'call' in title_lower:
+    if 'war' in title_lower or 'doom' in title_lower or 'halo' in title_lower or 'call' in title_lower or 'strike' in title_lower:
         return '⚔️'
     if 'star' in title_lower or 'space' in title_lower or 'rocket' in title_lower:
         return '🚀'
-    return '🎮'
+    return '💻'
 
 def add_recommended_games_for_user(user_id):
     recommended = [
@@ -568,10 +526,12 @@ def add_recommended_games_for_user(user_id):
             game.emoji = choose_game_emoji(game.title, game.platform)
         if game.steam_app_id:
             details = fetch_steam_app_details(game.steam_app_id)
-            game.image_url = details.get('header_image') or details.get('background') or game.image_url
+            game.image_url = details.get('header_image') or details.get('background') or DEFAULT_GAME_IMAGE_URL
             if details and not game.steam_name:
                 game.steam_name = details.get('name')
             import_steam_achievements_for_game(game)
+        else:
+            game.image_url = DEFAULT_GAME_IMAGE_URL
         existing_titles.add(game_data['title'].lower())
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -625,11 +585,10 @@ def add_game():
     if request.method == 'POST':
         rating_value = request.form.get('rating')
         notes_value = request.form.get('notes')
-        platform_value = request.form.get('platform')
+        platform_value = request.form.get('platform') or 'PC'
         title_value = request.form.get('title')
         steam_app_id_value = request.form.get('steam_app_id') or None
         steam_name_value = request.form.get('steam_name') or None
-        suggestion_source_value = request.form.get('suggestion_source') or None
         image_url_value = request.form.get('image_url') or None
 
         new_game = Game(
@@ -642,13 +601,13 @@ def add_game():
             emoji=choose_game_emoji(title_value, platform_value),
             steam_app_id=steam_app_id_value,
             steam_name=steam_name_value,
-            image_url=image_url_value,
+            image_url=image_url_value or DEFAULT_GAME_IMAGE_URL,
             user_id=current_user.id
         )
         db.session.add(new_game)
         db.session.flush()
 
-        if not new_game.steam_app_id and suggestion_source_value != 'rawg':
+        if not new_game.steam_app_id:
             suggestions = search_steam_games(title_value)
             if suggestions:
                 new_game.steam_app_id = str(suggestions[0]['appid'])
@@ -656,10 +615,13 @@ def add_game():
 
         if new_game.steam_app_id:
             game_details = fetch_steam_app_details(new_game.steam_app_id)
-            new_game.image_url = game_details.get('header_image') or game_details.get('background') or new_game.image_url
+            new_game.image_url = game_details.get('header_image') or game_details.get('background') or new_game.image_url or DEFAULT_GAME_IMAGE_URL
             if game_details and not new_game.steam_name:
                 new_game.steam_name = game_details.get('name')
             import_steam_achievements_for_game(new_game)
+        else:
+            new_game.image_url = new_game.image_url or DEFAULT_GAME_IMAGE_URL
+        
         db.session.commit()
         flash('Juego añadido correctamente. Ahora puedes revisar sus logros.', 'success')
         return redirect(url_for('achievements', game_id=new_game.id))
@@ -671,9 +633,7 @@ def add_game():
 def game_suggestions():
     query = request.args.get('query', '').strip()
     steam_results = search_steam_games(query)
-    rawg_results = search_rawg_games(query)
-    local_results = search_local_nintendo_games(query)
-    return jsonify(merge_game_suggestions(steam_results, rawg_results, local_results))
+    return jsonify(steam_results)
 
 @app.route('/edit/<int:game_id>', methods=['GET', 'POST'])
 @login_required
@@ -682,7 +642,7 @@ def edit_game(game_id):
     if game.user_id != current_user.id:
         return "Acceso denegado", 403
         
-    platforms = ['PS3', 'PS4 Pro', 'PS5', 'Nintendo Switch', 'PC', 'Móvil']
+    platforms = ['PC', 'Steam Deck']
     statuses = ['sin jugar', 'Jugando', 'Completado']
 
     if request.method == 'POST':
@@ -694,7 +654,6 @@ def edit_game(game_id):
         notes_value = request.form.get('notes')
         game.notes = notes_value.strip() if notes_value and notes_value.strip() else None
         game.progress = int(request.form.get('progress') or 0)
-        # optional analytics fields
         try:
             game.hours = float(request.form.get('hours') or 0)
         except Exception:
@@ -765,7 +724,6 @@ def stats():
 @app.route('/suggest')
 @login_required
 def suggest():
-    # Select a game from user's backlog using simple weighted heuristics
     candidates = Game.query.filter(Game.user_id == current_user.id).filter(Game.status != 'Completado').all()
     if not candidates:
         flash('No hay juegos pendientes para sugerir.', 'warning')
@@ -802,7 +760,6 @@ def suggest():
 @app.route('/profile')
 @login_required
 def profile():
-    # Mostrar página de perfil del usuario
     games_count = Game.query.filter_by(user_id=current_user.id).count()
     return render_template('profile.html', user=current_user, games_count=games_count)
 
@@ -816,21 +773,22 @@ def settings():
     return render_template('settings.html')
 
 def seed_games():
-    # Solo añadir si no hay juegos para el usuario
+    # Ahora sembramos puros juegazos de PC con su respectivo ID de Steam e imagen resuelta de una vez
     if Game.query.first() is None:
         juegos_iniciales = [
-            ("The Legend of Zelda: BOTW", "Nintendo Switch", "Completado", 100, 10, "Obra maestra", 120, 'Action-Adventure'),
-            ("Bloodborne", "PS4 Pro", "Jugando", 45, 9, "Muy difícil", 80, 'Action-RPG'),
-            ("FIFA 18", "PS3", "Jugando", 20, 7, "Clásico", 40, 'Sports'),
-            ("Dead Cells", "Nintendo Switch", "En Backlog", 0, 8, "Rogue-like", 15, 'Roguelike,Metroidvania'),
-            ("God of War Ragnarök", "PS5", "Completado", 100, 10, "Increíble historia", 50, 'Action-Adventure'),
-            ("Elden Ring", "PC", "Jugando", 60, 9, "Mundo abierto vasto", 200, 'Action-RPG,Open World'),
-            ("The Last of Us Part II", "PS4 Pro", "Completado", 100, 10, "Impactante", 90, 'Action-Adventure'),
-            ("Hollow Knight", "Nintendo Switch", "En Backlog", 0, 9, "Retador", 35, 'Metroidvania,Platformer'),
-            ("Cyberpunk 2077", "PC", "En Backlog", 10, 8, "Mundo inmersivo", 60, 'RPG,Open World'),
-            ("Brawl Stars", "Móvil", "Jugando", 80, 7, "Adictivo", 250, 'Multiplayer')
+            ("Counter-Strike 2", "PC", "Jugando", 50, 9, "Puro headshot mi pana", 150, "FPS,Multiplayer", "730"),
+            ("Dota 2", "PC", "Jugando", 80, 8, "El vicio de toda la vida", 500, "MOBA", "570"),
+            ("Elden Ring", "PC", "Jugando", 60, 10, "Mundo abierto brutal", 200, "Action-RPG,Open World", "1245620"),
+            ("Cyberpunk 2077", "PC", "En Backlog", 10, 9, "Night City nos espera", 60, "RPG,Open World", "1091500"),
+            ("Baldur's Gate 3", "PC", "Completado", 100, 10, "Obra maestra del RPG", 120, "RPG,Turn-Based", "1086940"),
+            ("Half-Life 2", "PC", "Completado", 100, 10, "Un clásico que nunca muere", 20, "FPS,Sci-Fi", "220"),
+            ("Portal 2", "PC", "Completado", 100, 10, "Los mejores puzzles", 15, "Puzzle,Co-op", "620"),
+            ("Left 4 Dead 2", "PC", "Jugando", 90, 9, "Para jugar con los panas", 100, "Zombies,Co-op", "550"),
+            ("Terraria", "PC", "En Backlog", 5, 9, "Horas infinitas de minería", 40, "Sandbox,Survival", "105600"),
+            ("Stardew Valley", "PC", "En Backlog", 0, 10, "Para relajar el cerebro", 30, "Simulation,Farming", "413150")
         ]
-        for titulo, plat, est, prog, rat, nota, hrs, gen in juegos_iniciales:
+        for titulo, plat, est, prog, rat, nota, hrs, gen, appid in juegos_iniciales:
+            img_url = resolve_steam_image(appid, titulo)
             db.session.add(Game(
                 title=titulo,
                 platform=plat,
@@ -841,6 +799,8 @@ def seed_games():
                 hours=hrs,
                 genre=gen,
                 emoji=choose_game_emoji(titulo, plat),
+                steam_app_id=appid,
+                image_url=img_url,
                 user_id=1
             ))
         db.session.commit()
@@ -850,5 +810,5 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         ensure_schema()
-        seed_games() # <--- Llama aquí para cargar los 10 juegos
+        seed_games()
     app.run(debug=True, port=5000)

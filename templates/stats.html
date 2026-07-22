@@ -26,80 +26,90 @@
             <p class="lead">Una vista clara de tu progreso y plataformas favoritas.</p>
         </div>
 
-        <div class="row gy-5 stats-grid">
-            <div class="col-12 col-lg-4 mx-auto">
-                <div class="hero-card text-center">
-                    <h2 class="h4 mb-2">Total de juegos registrados</h2>
-                    <p class="display-6 mb-0">{{ total_games }}</p>
-                </div>
-            </div>
-            <div class="col-12 col-lg-8">
-                <div class="row g-5 stats-grid">
-                        <div class="col-12 col-md-4">
-                            <div class="hero-card text-center">
-                                <h2 class="h5 mb-1">Total de juegos</h2>
-                                <p class="display-6 mb-0">{{ total_games }}</p>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="card panel-card h-100 text-center p-3">
-                                <h6 class="mb-1">Completados este año</h6>
-                                <div class="h3 mb-0">{{ completed_this_year }}</div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="card panel-card h-100 text-center p-3">
-                                <h6 class="mb-1">Plataforma más jugada</h6>
-                                <div class="h5 mb-0">{% if most_played_platform %}{{ most_played_platform[0] }} ({{ most_played_platform[1] }}){% else %}-{% endif %}</div>
-                            </div>
+        <div class="row gy-4 stats-grid">
+            <!-- KPIs -->
+            <div class="col-12">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center p-3">
+                            <h6 class="mb-1">Total juegos</h6>
+                            <div class="h3 mb-0">{{ total_games }}</div>
                         </div>
                     </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center p-3">
+                            <h6 class="mb-1">Completados (este año)</h6>
+                            <div class="h3 mb-0">{{ completed_this_year }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center p-3">
+                            <h6 class="mb-1">Horas totales</h6>
+                            <div class="h3 mb-0">{{ total_hours }} h</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center p-3">
+                            <h6 class="mb-1">Plataforma top</h6>
+                            <div class="h5 mb-0">{% if most_played_platform %}{{ most_played_platform[0] }} ({{ most_played_platform[1] }}){% else %}-{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="row g-5">
-                                    <div class="col-md-6 mb-4">
-                            <div class="card panel-card shadow-sm h-100">
-                                <div class="card-body">
-                                    <h4 class="card-title text-center">Estado del Catálogo</h4>
-                                    <canvas id="estadoChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                                    <div class="col-md-6 mb-4">
-                            <div class="card panel-card shadow-sm h-100">
-                                <div class="card-body">
-                                    <h4 class="card-title text-center">Juegos por Plataforma</h4>
-                                    <canvas id="plataformaChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                                    <div class="col-12 mt-4">
-                                        <div class="row g-4">
-                                            <div class="col-md-4">
-                                                <div class="card panel-card text-center p-3">
-                                                    <h6 class="mb-1">Horas Totales Registradas</h6>
-                                                    <div class="h3 mb-0">{{ total_hours }} h</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="card panel-card text-center p-3">
-                                                    <h6 class="mb-1">Top Juegos por Horas</h6>
-                                                    <canvas id="hoursChart"></canvas>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="card panel-card text-center p-3">
-                                                    <h6 class="mb-1">Abandonados vs Completados</h6>
-                                                    <canvas id="abandonChart"></canvas>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="card panel-card text-center p-3">
-                                                    <h6 class="mb-1">Top Géneros</h6>
-                                                    <canvas id="genresChart"></canvas>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+            <!-- Charts grid -->
+            <div class="col-12 col-lg-6">
+                <div class="card panel-card shadow-sm h-100 mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Estado del catálogo</h5>
+                        {% if estados_labels and estados_data %}
+                            <canvas id="estadoChart"></canvas>
+                        {% else %}
+                            <p class="text-muted">No hay datos de estado disponibles.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Top géneros</h5>
+                        {% if genre_labels and genre_data %}
+                            <canvas id="genresChart"></canvas>
+                        {% else %}
+                            <p class="text-muted">No hay géneros registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="card panel-card shadow-sm h-100 mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Juegos por plataforma</h5>
+                        {% if plat_labels and plat_data %}
+                            <canvas id="plataformaChart"></canvas>
+                        {% else %}
+                            <p class="text-muted">No hay plataformas registradas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm h-100 mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Abandonados vs Completados</h5>
+                        <canvas id="abandonChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Top juegos por horas</h5>
+                        {% if hours_labels and hours_data %}
+                            <canvas id="hoursChart"></canvas>
+                        {% else %}
+                            <p class="text-muted">No hay horas registradas para mostrar top.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>

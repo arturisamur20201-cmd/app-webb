@@ -22,6 +22,7 @@ app.config['SITE_NAME'] = 'To-Play List'
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# Resolve database path early so app config can use it.
 def resolve_database_uri():
     if os.environ.get('DATABASE_URL'):
         return os.environ['DATABASE_URL']
@@ -33,382 +34,79 @@ def resolve_database_uri():
         return 'sqlite:///' + legacy_db
     return 'sqlite:///' + primary_db
 
-app.config['SQLALCHEMY_DATABASE_URI'] = resolve_database_uri()
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+# Initialize Flask-Login manager (minimal setup)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = 'Por favor, inicia sesión para acceder.'
+app.login_manager = login_manager
 
+# Configure database
+app.config['SQLALCHEMY_DATABASE_URI'] = resolve_database_uri()
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize ORM and migrations
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+
+# Models (minimal fields needed by the app)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
 
+
 class Game(db.Model):
-    __tablename__ = 'games'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    platform = db.Column(db.String(50), nullable=False)
-    status = db.Column(db.String(50), default='sin jugar')
-    rating = db.Column(db.Integer, nullable=True)
-    notes = db.Column(db.Text, nullable=True)
-    date_added = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(250), nullable=False)
+    platform = db.Column(db.String(120))
+    status = db.Column(db.String(80))
     progress = db.Column(db.Integer, default=0)
-    emoji = db.Column(db.String(4), nullable=True)
+    rating = db.Column(db.Float, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    hours = db.Column(db.Float, default=0.0)
+    genre = db.Column(db.String(200), nullable=True)
+    emoji = db.Column(db.String(10), nullable=True)
     steam_app_id = db.Column(db.String(50), nullable=True)
-    steam_name = db.Column(db.String(200), nullable=True)
+    steam_name = db.Column(db.String(250), nullable=True)
     image_url = db.Column(db.String(500), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)
+    achievements = db.relationship('Achievement', backref='game', lazy='dynamic')
+
 
 class Achievement(db.Model):
-    __tablename__ = 'achievements'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    title = db.Column(db.String(250), nullable=False)
+    description = db.Column(db.Text)
     difficulty = db.Column(db.Integer, default=3)
-    unlocked = db.Column(db.Boolean, default=False)
-    source = db.Column(db.String(50), default='manual')
-    steam_api_name = db.Column(db.String(150), nullable=True)
-    game_id = db.Column(db.Integer, db.ForeignKey('games.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    game = db.relationship('Game', backref=db.backref('achievements', cascade='all, delete-orphan'))
+    source = db.Column(db.String(50))
+    game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
+# Flask-Login loader
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-@app.context_processor
-def inject_site_name():
-    return dict(site_name=app.config.get('SITE_NAME', 'Mi Backlog'))
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
 
 
 def ensure_schema():
-    with db.engine.connect() as conn:
-        games_columns = [row[1] for row in conn.execute(text("PRAGMA table_info(games)")).fetchall()]
-        if 'progress' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN progress INTEGER DEFAULT 0"))
-        if 'emoji' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN emoji TEXT"))
-        if 'steam_app_id' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN steam_app_id TEXT"))
-        if 'steam_name' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN steam_name TEXT"))
-        if 'image_url' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN image_url TEXT"))
-        # Optional analytics columns
-        if 'hours' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN hours REAL DEFAULT 0"))
-        if 'genre' not in games_columns:
-            conn.execute(text("ALTER TABLE games ADD COLUMN genre TEXT"))
+    """Create DB schema and a seeded user if missing."""
+    db.create_all()
+    try:
+        if User.query.count() == 0:
+            u = User(username='admin', password=generate_password_hash('admin'))
+            db.session.add(u)
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
-DEFAULT_RECOMMENDED_GAMES = [
-    {
-        'title': 'Hades II',
-        'platform': 'PC',
-        'steam_app_id': '1145350',
-        'note': 'La secuela del rey de los roguelites, ahora controlando a Melinoë con nueva magia.',
-    },
-    {
-        'title': 'Dead Cells',
-        'platform': 'PC / PS4',
-        'steam_app_id': '588650',
-        'note': 'Un metroidvania roguelite frenético con un combate absurdamente pulido.',
-    },
-    {
-        'title': 'The Binding of Isaac: Rebirth',
-        'platform': 'PC / PS4',
-        'steam_app_id': '250900',
-        'note': 'El clásico indiscutible de la generación procedimental y las sinergias locas.',
-    },
-    {
-        'title': 'Enter the Gungeon',
-        'platform': 'PC / PS4',
-        'steam_app_id': '311690',
-        'note': 'Un bullet hell roguelike adictivo lleno de armas absurdas y referencias pop.',
-    },
-    {
-        'title': 'Slay the Spire',
-        'platform': 'PC / PS4',
-        'steam_app_id': '646570',
-        'note': 'El roguelike de construcción de mazos definitivo. Adictivo a más no poder.',
-    },
-    {
-        'title': 'Risk of Rain 2',
-        'platform': 'PC / PS4',
-        'steam_app_id': '632360',
-        'note': 'Un roguelike en 3D caótico donde la dificultad sube con el reloj.',
-    },
-    {
-        'title': 'Vampire Survivors',
-        'platform': 'PC',
-        'steam_app_id': '1794680',
-        'note': 'El juego de "bullet heaven" que puso de moda sobrevivir a hordas con ataques automáticos.',
-    },
-    {
-        'title': 'Marvel\'s Spider-Man 2',
-        'platform': 'PS5 / PC',
-        'steam_app_id': '2940250',
-        'note': 'La espectacular continuación de la historia de Peter y Miles con el traje de simbiote.',
-    },
-    {
-        'title': 'God of War Ragnarök',
-        'platform': 'PS4 / PC',
-        'steam_app_id': '2322010',
-        'note': 'El épico cierre de la saga nórdica de Kratos y Atreus con un combate brutal.',
-    },
-    {
-        'title': 'Elden Ring',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1245620',
-        'note': 'La obra maestra de FromSoftware que redefine lo que debe ser un mundo abierto.',
-    },
-    {
-        'title': 'Cyberpunk 2077',
-        'platform': 'PC',
-        'steam_app_id': '1091500',
-        'note': 'Un RPG de acción brutal en Night City que brilla con Lossless Scaling o FSR.',
-    },
-    {
-        'title': 'Red Dead Redemption 2',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1174180',
-        'note': 'Uno de los mundos abiertos más inmersivos y detallados jamás creados.',
-    },
-    {
-        'title': 'Grand Theft Auto V',
-        'platform': 'PC / PS4',
-        'steam_app_id': '271590',
-        'note': 'El titán de Rockstar que nunca muere. Campaña increíble y un online eterno.',
-    },
-    {
-        'title': 'Ghost of Tsushima DIRECTOR\'S CUT',
-        'platform': 'PS4 / PC',
-        'steam_app_id': '2215430',
-        'note': 'Combates de samuráis perfectos y un apartado artístico que te deja loco.',
-    },
-    {
-        'title': 'Horizon Forbidden West',
-        'platform': 'PS4 / PC',
-        'steam_app_id': '2420110',
-        'note': 'Aloy explora el Oeste Prohibido enfrentando nuevas y colosales máquinas mecánicas.',
-    },
-    {
-        'title': 'The Witcher 3: Wild Hunt',
-        'platform': 'PC / PS4',
-        'steam_app_id': '292030',
-        'note': 'Una de las mejores narrativas en los videojuegos de rol de la historia.',
-    },
-    {
-        'title': 'Hitman World of Assassination',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1659040',
-        'note': 'El simulador de asesinatos definitivo con mapas gigantescos que son puzles interactivos.',
-    },
-    {
-        'title': 'Metal Gear Solid V: The Phantom Pain',
-        'platform': 'PC / PS4',
-        'steam_app_id': '287700',
-        'note': 'Jugabilidad de sigilo perfecta en mundo abierto cortesía de Hideo Kojima.',
-    },
-    {
-        'title': 'Dishonored 2',
-        'platform': 'PC / PS4',
-        'steam_app_id': '403640',
-        'note': 'Infiltración en primera persona con un diseño de niveles brillante y super creativo.',
-    },
-    {
-        'title': 'EA Sports FC 24',
-        'platform': 'PC / PS4',
-        'steam_app_id': '2195250',
-        'note': 'La evolución de FIFA con Ultimate Team y el modo carrera para armar tu plantilla ideal.',
-    },
-    {
-        'title': 'Forza Horizon 5',
-        'platform': 'PC',
-        'steam_app_id': '1551360',
-        'note': 'El rey de los arcades de conducción en un mapa brutal inspirado en México.',
-    },
-    {
-        'title': 'Assetto Corsa Competizione',
-        'platform': 'PC / PS4',
-        'steam_app_id': '805550',
-        'note': 'Simulador de carreras serio enfocado en la categoría GT con físicas brutales.',
-    },
-    {
-        'title': 'Rocket League',
-        'platform': 'PC / PS4',
-        'steam_app_id': '252950',
-        'note': 'Fútbol con carros propulsados por cohetes. Rápido, competitivo y gratis.',
-    },
-    {
-        'title': 'Hollow Knight',
-        'platform': 'PC / PS4',
-        'steam_app_id': '367520',
-        'note': 'El pico más alto de los metroidvania independientes. Arte, música y reto top.',
-    },
-    {
-        'title': 'Celeste',
-        'platform': 'PC / PS4',
-        'steam_app_id': '504230',
-        'note': 'Un plataformas de precisión ultra pulido con una hermosa historia sobre superación.',
-    },
-    {
-        'title': 'Outer Wilds',
-        'platform': 'PC / PS4',
-        'steam_app_id': '753640',
-        'note': 'Una aventura de misterio espacial basada en la curiosidad y bucles temporales.',
-    },
-    {
-        'title': 'Stardew Valley',
-        'platform': 'PC / PS4',
-        'steam_app_id': '413150',
-        'note': 'El simulador de granja e interacción social definitivo. Paz mental hecha juego.',
-    },
-    {
-        'title': 'Terraria',
-        'platform': 'PC / PS4',
-        'steam_app_id': '105600',
-        'note': 'Aventura sandbox en 2D con un sistema de progresión y jefes brutal.',
-    },
-    {
-        'title': 'Shovel Knight: Treasure Trove',
-        'platform': 'PC / PS4',
-        'steam_app_id': '250760',
-        'note': 'Una carta de amor a los juegos clásicos de 8 bits con mecánicas modernas.',
-    },
-    {
-        'title': 'Cuphead',
-        'platform': 'PC / PS4',
-        'steam_app_id': '268910',
-        'note': 'Un juego de jefes frenético con un estilo de animación de los años 30 dibujado a mano.',
-    },
-    {
-        'title': 'Katana ZERO',
-        'platform': 'PC',
-        'steam_app_id': '460950',
-        'note': 'Acción neo-noir en 2D donde mueres de un golpe y manipulas el tiempo.',
-    },
-    {
-        'title': 'Hotline Miami',
-        'platform': 'PC / PS4',
-        'steam_app_id': '219150',
-        'note': 'Acción cenital salvaje con una banda sonora synthwave espectacular.',
-    },
-    {
-        'title': 'Ori and the Will of the Wisps',
-        'platform': 'PC',
-        'steam_app_id': '1057090',
-        'note': 'Un metroidvania visualmente precioso con una fluidez de movimiento increíble.',
-    },
-    {
-        'title': 'Disco Elysium - The Final Cut',
-        'platform': 'PC / PS4',
-        'steam_app_id': '632470',
-        'note': 'Un RPG detectivesco donde tus habilidades definen la salud mental de tu personaje.',
-    },
-    {
-        'title': 'Subnautica',
-        'platform': 'PC / PS4',
-        'steam_app_id': '264710',
-        'note': 'Supervivencia y exploración en un océano alienígena hermoso... y terrorífico.',
-    },
-    {
-        'title': 'It Takes Two',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1426210',
-        'note': 'El mejor juego cooperativo exclusivo para dos personas. Pura creatividad.',
-    },
-    {
-        'title': 'Helldivers 2',
-        'platform': 'PC / PS5',
-        'steam_app_id': '553850',
-        'note': 'Acción cooperativa caótica repartiendo democracia intergaláctica con amigos.',
-    },
-    {
-        'title': 'Lethal Company',
-        'platform': 'PC',
-        'steam_app_id': '1966720',
-        'note': 'Terror cooperativo lo-fi que genera situaciones absurdamente cómicas con chat de voz de proximidad.',
-    },
-    {
-        'title': 'Monster Hunter: World',
-        'platform': 'PC / PS4',
-        'steam_app_id': '582010',
-        'note': 'Cazar monstruos gigantescos con armas colosales, solo o con panas.',
-    },
-    {
-        'title': 'Overcooked! All You Can Eat',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1243830',
-        'note': 'El simulador de cocina que pone a prueba tus amistades y tu manejo del caos.',
-    },
-    {
-        'title': 'Resident Evil 4 (Remake)',
-        'platform': 'PC / PS4',
-        'steam_app_id': '2050650',
-        'note': 'Una reimaginarización perfecta del clásico de acción y survival horror.',
-    },
-    {
-        'title': 'Resident Evil 7: Biohazard',
-        'platform': 'PC / PS4',
-        'steam_app_id': '418370',
-        'note': 'El regreso al terror puro en primera persona dentro de una casa pantanosa y tétrica.',
-    },
-    {
-        'title': 'Outlast',
-        'platform': 'PC / PS4',
-        'steam_app_id': '238320',
-        'note': 'Terror psicológico puro en un manicomio donde tu única defensa es correr y grabar.',
-    },
-    {
-        'title': 'Dead Space (Remake)',
-        'platform': 'PC',
-        'steam_app_id': '1693980',
-        'note': 'Terror de ciencia ficción claustrofóbico con un desmembramiento táctico impecable.',
-    },
-    {
-        'title': 'Alan Wake 2',
-        'platform': 'PC',
-        'steam_app_id': '0',
-        'note': 'Survival horror psicológico con una narrativa densa y gráficos fotorrealistas.',
-    },
-    {
-        'title': 'Sekiro: Shadows Die Twice',
-        'platform': 'PC / PS4',
-        'steam_app_id': '814380',
-        'note': 'El mejor sistema de parries y combate de katanas del mundo de los videojuegos.',
-    },
-    {
-        'title': 'Dark Souls III',
-        'platform': 'PC / PS4',
-        'steam_app_id': '374320',
-        'note': 'El cierre perfecto de la trilogía original de FromSoftware. Jefes memorables.',
-    },
-    {
-        'title': 'Lies of P',
-        'platform': 'PC / PS4',
-        'steam_app_id': '1627720',
-        'note': 'Un espectacular soulslike inspirado en Pinocho con una ambientación victoriana genial.',
-    },
-    {
-        'title': 'Devil May Cry 5',
-        'platform': 'PC / PS4',
-        'steam_app_id': '601150',
-        'note': 'Acción hack and slash pura con combos infinitos llenos de estilo.',
-    },
-    {
-        'title': 'Monster Hunter Wilds',
-        'platform': 'PC',
-        'steam_app_id': '2246340',
-        'note': 'La nueva frontera de la caza de monstruos con ecosistemas vivos masivos.',
-    },
-]
+# DEFAULT_RECOMMENDED_GAMES is used by the recommendation helper below.
+DEFAULT_RECOMMENDED_GAMES = []
 
 NINTENDO_FALLBACK_GAMES = [
     {'title': 'The Legend of Zelda: Breath of the Wild', 'platform': 'Nintendo Switch'},
@@ -459,13 +157,22 @@ def get_session_recommendation():
     rec = session.get('recommended_game')
     if rec:
         return rec
-    selected = random.choice(DEFAULT_RECOMMENDED_GAMES)
+    pool = DEFAULT_RECOMMENDED_GAMES or NINTENDO_FALLBACK_GAMES
+    if not pool:
+        return {
+            'title': 'Recomendado',
+            'platform': 'General',
+            'steam_app_id': None,
+            'note': 'No hay recomendaciones disponibles en este momento.',
+            'image_url': '',
+        }
+    selected = random.choice(pool)
     image_url = resolve_steam_image(selected.get('steam_app_id'), selected.get('title'))
     rec = {
-        'title': selected['title'],
-        'platform': selected['platform'],
-        'steam_app_id': selected['steam_app_id'],
-        'note': selected['note'],
+        'title': selected.get('title', 'Juego recomendado'),
+        'platform': selected.get('platform', 'Desconocido'),
+        'steam_app_id': selected.get('steam_app_id'),
+        'note': selected.get('note', ''),
         'image_url': image_url,
     }
     session['recommended_game'] = rec
@@ -588,6 +295,87 @@ def build_achievement_payloads(schema_payload, player_payload):
             'unlocked': bool(player_entry.get('achieved')),
         })
     return achievements
+
+
+def compute_stats(games):
+    """Compute aggregated stats from a list of Game objects and return a dict of values
+    used by the stats view. Handles missing attributes safely.
+    """
+    estados = {}
+    plataformas = {}
+    genero_count = {}
+    total_hours = 0.0
+    completed_this_year = 0
+
+    for g in games:
+        status = (getattr(g, 'status', '') or '').strip()
+        platform = (getattr(g, 'platform', '') or '').strip()
+        estados[status] = estados.get(status, 0) + 1
+        plataformas[platform] = plataformas.get(platform, 0) + 1
+
+        try:
+            date_added = getattr(g, 'date_added', None)
+            if status == 'Completado' and date_added and date_added.year == datetime.utcnow().year:
+                completed_this_year += 1
+        except Exception:
+            pass
+
+        try:
+            total_hours += float(getattr(g, 'hours', 0) or 0)
+        except Exception:
+            pass
+
+        genre_val = getattr(g, 'genre', None)
+        if genre_val:
+            try:
+                parts = [p.strip() for p in str(genre_val).split(',') if p.strip()]
+                for p in parts:
+                    genero_count[p] = genero_count.get(p, 0) + 1
+            except Exception:
+                pass
+
+    abandoned_statuses = {'En Backlog', 'sin jugar'}
+    abandoned = sum(1 for g in games if (getattr(g, 'status', '') or '').strip() in abandoned_statuses)
+    completed = sum(1 for g in games if (getattr(g, 'status', '') or '').strip() == 'Completado')
+
+    most_played_platform = None
+    if plataformas:
+        most_played_platform = max(plataformas.items(), key=lambda x: x[1])
+
+    top_genres = sorted(genero_count.items(), key=lambda x: x[1], reverse=True)
+    genre_labels = [g[0] for g in top_genres]
+    genre_data = [g[1] for g in top_genres]
+
+    # Top games by hours
+    games_with_hours = []
+    for g in games:
+        try:
+            h = float(getattr(g, 'hours', 0) or 0)
+        except Exception:
+            h = 0.0
+        if h > 0:
+            games_with_hours.append((getattr(g, 'title', 'Untitled'), h, getattr(g, 'id', None)))
+    games_with_hours.sort(key=lambda x: x[1], reverse=True)
+    top_hours = games_with_hours[:5]
+    hours_labels = [g[0] for g in top_hours]
+    hours_data = [g[1] for g in top_hours]
+
+    return {
+        'estados_labels': list(estados.keys()),
+        'estados_data': list(estados.values()),
+        'plat_labels': list(plataformas.keys()),
+        'plat_data': list(plataformas.values()),
+        'total_games': len(games),
+        'completed_this_year': completed_this_year,
+        'most_played_platform': most_played_platform,
+        'abandoned_count': abandoned,
+        'completed_count': completed,
+        'total_hours': round(total_hours, 1),
+        'genre_labels': genre_labels,
+        'genre_data': genre_data,
+        'hours_labels': hours_labels,
+        'hours_data': hours_data,
+    }
 
 
 def search_rawg_games(query, limit=6):
@@ -957,14 +745,6 @@ def achievements(game_id):
 
     return render_template('achievements.html', game=game, achievements=game.achievements)
 
-
-@app.route('/api/steam/suggestions')
-@login_required
-def steam_suggestions():
-    query = request.args.get('query', '').strip()
-    return jsonify(search_steam_games(query))
-
-
 @app.route('/delete/<int:game_id>', methods=['POST'])
 @login_required
 def delete_game(game_id):
@@ -978,71 +758,8 @@ def delete_game(game_id):
 @login_required
 def stats():
     games = Game.query.filter_by(user_id=current_user.id).all()
-
-    # Procesar datos para los gráficos
-    estados = {}
-    plataformas = {}
-    genero_count = {}
-    total_hours = 0.0
-
-    completed_this_year = 0
-    for g in games:
-        estados[g.status] = estados.get(g.status, 0) + 1
-        plataformas[g.platform] = plataformas.get(g.platform, 0) + 1
-        try:
-            if g.status == 'Completado' and g.date_added and g.date_added.year == datetime.utcnow().year:
-                completed_this_year += 1
-        except Exception:
-            pass
-
-        # Horas jugadas (si existe)
-        try:
-            total_hours += float(g.hours or 0)
-        except Exception:
-            pass
-
-        # Género (puede ser cadena o lista separada por comas)
-        if g.genre:
-            parts = [p.strip() for p in g.genre.split(',') if p.strip()]
-            for p in parts:
-                genero_count[p] = genero_count.get(p, 0) + 1
-
-    # Abandoned vs Completed
-    abandoned_statuses = {'En Backlog', 'sin jugar'}
-    abandoned = sum(1 for g in games if (g.status or '').strip() in abandoned_statuses)
-    completed = sum(1 for g in games if (g.status or '').strip() == 'Completado')
-
-    most_played_platform = None
-    if plataformas:
-        most_played_platform = max(plataformas.items(), key=lambda x: x[1])
-
-    # Top genres
-    top_genres = sorted(genero_count.items(), key=lambda x: x[1], reverse=True)
-    genre_labels = [g[0] for g in top_genres]
-    genre_data = [g[1] for g in top_genres]
-
-    # Top games by hours
-    games_with_hours = [(g.title, float(g.hours or 0), g.id) for g in games if (g.hours or 0) > 0]
-    games_with_hours.sort(key=lambda x: x[1], reverse=True)
-    top_hours = games_with_hours[:5]
-    hours_labels = [g[0] for g in top_hours]
-    hours_data = [g[1] for g in top_hours]
-
-    return render_template('stats.html', 
-                           estados_labels=list(estados.keys()), 
-                           estados_data=list(estados.values()),
-                           plat_labels=list(plataformas.keys()),
-                           plat_data=list(plataformas.values()),
-                           total_games=len(games),
-                           completed_this_year=completed_this_year,
-                           most_played_platform=most_played_platform,
-                           abandoned_count=abandoned,
-                           completed_count=completed,
-                           total_hours=round(total_hours,1),
-                           genre_labels=genre_labels,
-                           genre_data=genre_data,
-                           hours_labels=hours_labels,
-                           hours_data=hours_data)
+    stats_payload = compute_stats(games)
+    return render_template('stats.html', **stats_payload)
 
 
 @app.route('/suggest')

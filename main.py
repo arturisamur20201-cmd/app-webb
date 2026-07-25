@@ -1,5 +1,7 @@
 import json
 import os
+import csv
+import io
 from datetime import datetime
 import random
 from urllib import error as urllib_error, parse as urllib_parse, request as urllib_request
@@ -12,6 +14,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from flask_migrate import Migrate
+from flask import make_response
+from flask import jsonify
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'clave_secreta_backlog_dev'
@@ -119,6 +123,14 @@ STEAM_FALLBACK_GAMES = [
     {'title': 'Hollow Knight', 'platform': 'PC', 'steam_app_id': '367520'},
     {'title': 'Celeste', 'platform': 'PC', 'steam_app_id': '103100'},
     {'title': 'Hades', 'platform': 'PC', 'steam_app_id': '310950'}
+]
+
+frases_gamers = [
+    "¡Un soldado más se une a la batalla!",
+    "¡El vicio no se crea, se transforma!",
+    "Tu backlog te saluda, ¿por dónde empezamos?",
+    "¡Prepara los controles, la partida comienza!",
+    "En el juego de la vida, tú eres el desarrollador principal."
 ]
 
 
@@ -702,7 +714,7 @@ def achievements(game_id):
         if imported:
             db.session.commit()
 
-    return render_template('achievements.html', game=game, achievements=game.achievements)
+    return render_template('achievements.html', game=game, achievements=game.achievements.all())
 
 @app.route('/delete/<int:game_id>', methods=['POST'])
 @login_required
@@ -757,13 +769,6 @@ def suggest():
     return redirect(url_for('index'))
 
 
-@app.route('/profile')
-@login_required
-def profile():
-    games_count = Game.query.filter_by(user_id=current_user.id).count()
-    return render_template('profile.html', user=current_user, games_count=games_count)
-
-
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -773,7 +778,6 @@ def settings():
     return render_template('settings.html')
 
 def seed_games():
-    # Ahora sembramos puros juegazos de PC con su respectivo ID de Steam e imagen resuelta de una vez
     if Game.query.first() is None:
         juegos_iniciales = [
             ("Counter-Strike 2", "PC", "Jugando", 50, 9, "Puro headshot mi pana", 150, "FPS,Multiplayer", "730"),
@@ -804,7 +808,31 @@ def seed_games():
                 user_id=1
             ))
         db.session.commit()
+
+@app.route('/export-csv')
+@login_required
+def exportar_csv():
+    juegos = Game.query.filter_by(user_id=current_user.id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(['ID', 'Título', 'Plataforma', 'Estado', 'Progreso (%)'])
+    for j in juegos:
+        writer.writerow([j.id, j.title, j.platform, j.status, j.progress])
         
+    response = make_response(output.getvalue())
+    response.headers['Content-Disposition'] = 'attachment; filename=mi_backlog_juegos.csv'
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    
+    return response
+
+@app.route('/profile')
+@login_required
+def profile():
+    games_count = Game.query.filter_by(user_id=current_user.id).count()
+    frase_aleatoria = random.choice(frases_gamers)
+    return render_template('profile.html', user=current_user, games_count=games_count, frase_aleatoria=frase_aleatoria)
 
 if __name__ == '__main__':
     with app.app_context():

@@ -8,6 +8,9 @@ from main import (
     app,
     build_achievement_payloads,
     build_steam_suggestion_payload,
+    build_rawg_suggestion_payload,
+    merge_game_suggestions,
+    search_local_nintendo_games,
     db,
     ensure_schema,
     generate_password_hash,
@@ -28,6 +31,57 @@ class SteamIntegrationTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["name"], "Hades")
         self.assertEqual(result[0]["appid"], 123)
+
+    def test_build_rawg_suggestion_payload_filters_invalid_items(self):
+        payload = {
+            "results": [
+                {"id": 777, "name": "Zelda", "background_image": "img", "platforms": [{"platform": {"name": "Nintendo Switch"}}]},
+                {"id": None, "name": "No id"},
+                {"id": 888, "name": ""},
+            ]
+        }
+        result = build_rawg_suggestion_payload(payload)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["name"], "Zelda")
+        self.assertEqual(result[0]["platform"], "Nintendo Switch")
+
+    def test_merge_game_suggestions_deduplicates_by_name(self):
+        steam = [
+            {"appid": 1, "name": "Hades", "source": "steam"},
+            {"appid": 2, "name": "Mario", "source": "steam"},
+        ]
+        rawg = [
+            {"appid": 3, "name": "Mario", "source": "rawg"},
+            {"appid": 4, "name": "Zelda", "source": "rawg"},
+        ]
+        result = merge_game_suggestions(steam, rawg)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0]["name"], "Hades")
+        self.assertEqual(result[1]["name"], "Mario")
+        self.assertEqual(result[2]["name"], "Zelda")
+
+    def test_build_steam_suggestion_payload_uses_default_image(self):
+        payload = {
+            "items": [
+                {"id": 123, "name": "Hades", "price": "$"},
+            ]
+        }
+        result = build_steam_suggestion_payload(payload)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
+
+    def test_build_rawg_suggestion_payload_uses_default_image(self):
+        payload = {
+            "results": [
+                {"id": 777, "name": "Zelda", "platforms": [{"platform": {"name": "Nintendo Switch"}}]},
+            ]
+        }
+        result = build_rawg_suggestion_payload(payload)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
+
+    def test_search_local_nintendo_games_uses_default_image(self):
+        result = search_local_nintendo_games('Zelda')
+        self.assertTrue(result)
+        self.assertEqual(result[0]["image"], '/static/img/logo.svg')
 
     def test_build_achievement_payloads_uses_schema_and_player_state(self):
         schema_payload = {

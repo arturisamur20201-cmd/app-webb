@@ -47,6 +47,14 @@
                         <input type="number" name="rating" class="form-control" value="{{ game.rating if game.rating else '' }}" min="1" max="10">
                     </div>
                     <div class="mb-3">
+                        <label>Horas jugadas:</label>
+                        <input type="number" step="0.1" name="hours" class="form-control" value="{{ game.hours if game.hours else '' }}" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label>Género (coma separado):</label>
+                        <input type="text" name="genre" class="form-control" value="{{ game.genre if game.genre else '' }}">
+                    </div>
+                    <div class="mb-3">
                         <label>Notas:</label>
                         <textarea name="notes" class="form-control" rows="3">{{ game.notes if game.notes else '' }}</textarea>
                     </div>

@@ -39,7 +39,57 @@
                 <h2 class="mb-1">Perfil de {{ user.username }}</h2>
                 <p class="text-muted mb-0">Bienvenido a tu panel personal de To-Play List.</p>
             </div>
-            <div class="account-summary d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+            
+            <!-- Contenedor para la frase gamer con efecto de máquina de escribir -->
+            <div id="quote-container" class="alert alert-info text-center shadow-sm">
+                <span id="quote-text"></span><span class="typewriter-cursor">|</span>
+            </div>
+
+            <style>
+            #quote-text {
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
+            }
+
+            .typewriter-cursor {
+                display: inline-block;
+                font-weight: bold;
+                animation: blinkCursor 1s infinite;
+            }
+
+            @keyframes blinkCursor {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0; }
+            }
+            </style>
+
+           <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const text = {{ frase_aleatoria | tojson }};
+    const element = document.getElementById('quote-text');
+    let i = 0;
+
+    function typeWriter() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 45);
+        } else {
+            const cursor = document.querySelector('.typewriter-cursor');
+            if (cursor) cursor.style.display = 'none';
+        }
+    }
+    
+    if (text) {
+        typeWriter();
+    }      );
+</script>
+
+<!-- Direct Test Container -->
+<div class="alert alert-info text-center shadow-sm">
+    <strong>{{ frase_aleatoria }}</strong>
+</div>
+            <div class="account-summary d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 mt-3">
                 <div class="d-flex align-items-center gap-3 mb-3 mb-sm-0">
                     <span class="badge bg-secondary account-badge">Cuenta</span>
                     <div>
@@ -48,6 +98,7 @@
                 </div>
                 <span class="text-muted small">Última actualización: ahora</span>
             </div>
+            
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="card panel-card h-100">
@@ -66,6 +117,7 @@
                     </div>
                 </div>
             </div>
+            
             <hr>
             <h5>Información de la cuenta</h5>
             <p class="small text-muted">Aquí podrás ver tu información básica y acceder a la configuración.</p>

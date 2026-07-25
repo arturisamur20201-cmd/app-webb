@@ -240,17 +240,19 @@ a {
 }
 
 .logo-circle {
-    width: 72px;
-    height: 72px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     background: linear-gradient(135deg, #7c3aed, #06b6d4);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    color: #fff;
-    font-size: 1.4rem;
     box-shadow: 0 12px 30px rgba(124,58,237,0.35);
+}
+
+.login-logo {
+    width: 58px;
+    height: 58px;
 }
 
 .panel-card {
@@ -797,4 +799,24 @@ body.bg-light {
 .card .table {
     background: transparent !important;
 }
+/* Force the change when the class is activated in the body */
+body.dark-mode {
+    background-color: #0d1117 !important;
+    color: #f8f9fa !important;
+}
 
+body.dark-mode .card,
+body.dark-mode .game-card,
+body.dark-mode .navbar {
+    background-color: #161b22 !important;
+    color: #f8f9fa !important;
+    border-color: #30363d !important;
+}
+
+body.dark-mode h1, 
+body.dark-mode h2, 
+body.dark-mode h3, 
+body.dark-mode h4, 
+body.dark-mode h5 {
+    color: #f8f9fa !important;
+}

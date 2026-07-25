@@ -26,88 +26,194 @@
             <p class="lead">Una vista clara de tu progreso y plataformas favoritas.</p>
         </div>
 
-        <div class="row gy-5 stats-grid">
-            <div class="col-12 col-lg-4 mx-auto">
-                <div class="hero-card text-center">
-                    <h2 class="h4 mb-2">Total de juegos registrados</h2>
-                    <p class="display-6 mb-0">{{ total_games }}</p>
-                </div>
-            </div>
-            <div class="col-12 col-lg-8">
-                <div class="row g-5 stats-grid">
-                        <div class="col-12 col-md-4">
-                            <div class="hero-card text-center">
-                                <h2 class="h5 mb-1">Total de juegos</h2>
-                                <p class="display-6 mb-0">{{ total_games }}</p>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="card panel-card h-100 text-center p-3">
-                                <h6 class="mb-1">Completados este año</h6>
-                                <div class="h3 mb-0">{{ completed_this_year }}</div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="card panel-card h-100 text-center p-3">
-                                <h6 class="mb-1">Plataforma más jugada</h6>
-                                <div class="h5 mb-0">{% if most_played_platform %}{{ most_played_platform[0] }} ({{ most_played_platform[1] }}){% else %}-{% endif %}</div>
-                            </div>
+        <div class="row gy-4 stats-grid">
+            <!-- KPIs (Tarjetas compactas) -->
+            <div class="col-12">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center py-2 px-3 shadow-sm border-0">
+                            <span class="text-muted small mb-1">Total juegos</span>
+                            <div class="h4 mb-0 fw-bold text-primary">{{ total_games }}</div>
                         </div>
                     </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center py-2 px-3 shadow-sm border-0">
+                            <span class="text-muted small mb-1">Completados (este año)</span>
+                            <div class="h4 mb-0 fw-bold text-success">{{ completed_this_year }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center py-2 px-3 shadow-sm border-0">
+                            <span class="text-muted small mb-1">Horas totales</span>
+                            <div class="h4 mb-0 fw-bold text-warning">{{ total_hours }} h</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card panel-card text-center py-2 px-3 shadow-sm border-0">
+                            <span class="text-muted small mb-1">Plataforma top</span>
+                            <div class="h6 mb-0 fw-bold text-truncate">{% if most_played_platform %}{{ most_played_platform[0] }} ({{ most_played_platform[1] }}){% else %}-{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="row g-5">
-                        <div class="col-md-6 mb-4">
-                            <div class="card panel-card shadow-sm h-100">
-                                <div class="card-body">
-                                    <h4 class="card-title text-center">Estado del Catálogo</h4>
-                                    <canvas id="estadoChart"></canvas>
-                                </div>
+            <!-- Charts grid (Columna Izquierda) -->
+            <div class="col-12 col-lg-6">
+                <div class="card panel-card shadow-sm mb-3 border-0">
+                    <div class="card-body py-3">
+                        <h5 class="card-title mb-3 fs-6">Estado del catálogo</h5>
+                        {% if estados_labels and estados_data %}
+                            <div style="height: 220px; position: relative;">
+                                <canvas id="estadoChart"></canvas>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-4">
-                            <div class="card panel-card shadow-sm h-100">
-                                <div class="card-body">
-                                    <h4 class="card-title text-center">Juegos por Plataforma</h4>
-                                    <canvas id="plataformaChart"></canvas>
-                                </div>
+                        {% else %}
+                            <p class="text-muted small">No hay datos de estado disponibles.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm border-0">
+                    <div class="card-body py-3">
+                        <h5 class="card-title mb-3 fs-6">Top géneros</h5>
+                        {% if genre_labels and genre_data %}
+                            <div style="height: 220px; position: relative;">
+                                <canvas id="genresChart"></canvas>
                             </div>
+                        {% else %}
+                            <p class="text-muted small">No hay géneros registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts grid (Columna Derecha) -->
+            <div class="col-12 col-lg-6">
+                <div class="card panel-card shadow-sm mb-3 border-0">
+                    <div class="card-body py-3">
+                        <h5 class="card-title mb-3 fs-6">Juegos por plataforma</h5>
+                        {% if plat_labels and plat_data %}
+                            <div style="height: 220px; position: relative;">
+                                <canvas id="plataformaChart"></canvas>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small">No hay plataformas registradas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm mb-3 border-0">
+                    <div class="card-body py-3">
+                        <h5 class="card-title mb-3 fs-6">Abandonados vs Completados</h5>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="abandonChart"></canvas>
                         </div>
+                    </div>
+                </div>
+
+                <div class="card panel-card shadow-sm border-0">
+                    <div class="card-body py-3">
+                        <h5 class="card-title mb-3 fs-6">Top juegos por horas</h5>
+                        {% if hours_labels and hours_data %}
+                            <div style="height: 220px; position: relative;">
+                                <canvas id="hoursChart"></canvas>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small">No hay horas registradas para mostrar top.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Gráfico de Estados (Circular)
+        const estadosLabels = JSON.parse('{{ estados_labels | tojson | safe }}');
+        const estadosData = JSON.parse('{{ estados_data | tojson | safe }}');
+        
+        const platLabels = JSON.parse('{{ plat_labels | tojson | safe }}');
+        const platData = JSON.parse('{{ plat_data | tojson | safe }}');
+
+        const genreLabels = JSON.parse('{{ genre_labels | tojson | safe }}');
+        const genreData = JSON.parse('{{ genre_data | tojson | safe }}');
+
+        const hoursLabels = JSON.parse('{{ hours_labels | tojson | safe }}');
+        const hoursData = JSON.parse('{{ hours_data | tojson | safe }}');
+
+        const abandonedCount = {{ abandoned_count | default(0) }};
+        const completedCount = {{ completed_count | default(0) }};
+
         const ctxEstado = document.getElementById('estadoChart').getContext('2d');
         new Chart(ctxEstado, {
             type: 'doughnut',
             data: {
-                labels: {{ estados_labels | tojson }},
+                labels: estadosLabels,
                 datasets: [{
-                    data: {{ estados_data | tojson }},
+                    data: estadosData,
                     backgroundColor: ['#198754', '#ffc107', '#0d6efd', '#dc3545'],
                 }]
-            }
+            },
+            options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // Gráfico de Plataformas (Barras)
         const ctxPlataforma = document.getElementById('plataformaChart').getContext('2d');
         new Chart(ctxPlataforma, {
             type: 'bar',
             data: {
-                labels: {{ plat_labels | tojson }},
+                labels: platLabels,
                 datasets: [{
                     label: 'Cantidad de Juegos',
-                    data: {{ plat_data | tojson }},
+                    data: platData,
                     backgroundColor: '#6f42c1',
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: { beginAtZero: true, ticks: { stepSize: 1 } }
                 }
             }
+        });
+
+        const ctxAbandon = document.getElementById('abandonChart').getContext('2d');
+        new Chart(ctxAbandon, {
+            type: 'doughnut',
+            data: {
+                labels: ['Abandonados', 'Completados'],
+                datasets: [{
+                    data: [abandonedCount, completedCount],
+                    backgroundColor: ['#ff6b6b','#28a745']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const ctxGenres = document.getElementById('genresChart').getContext('2d');
+        new Chart(ctxGenres, {
+            type: 'bar',
+            data: {
+                labels: genreLabels,
+                datasets: [{
+                    label: 'Cantidad',
+                    data: genreData,
+                    backgroundColor: '#0ea5e9'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+        });
+
+        const ctxHours = document.getElementById('hoursChart').getContext('2d');
+        new Chart(ctxHours, {
+            type: 'bar',
+            data: {
+                labels: hoursLabels,
+                datasets: [{
+                    label: 'Horas jugadas',
+                    data: hoursData,
+                    backgroundColor: '#f97316'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     </script>
 </body>
